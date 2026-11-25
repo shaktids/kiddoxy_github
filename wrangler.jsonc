@@ -1,0 +1,8 @@
+{
+  "name": "kiddoxy",                 // must match the Worker name in your Cloudflare dashboard
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page"  // use "single-page-application" if it's a SPA
+  }
+}
