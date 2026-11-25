@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8"/>
+	<meta name="viewport" content="width=device-width,initial-scale=1"/>
+	<title>Spot the Difference</title>
+	<style>
+		:root{ --bg:#f7fbff; --surface:#ffffff; --accent:#0ea5e9; --ok:#16a34a; --warn:#dc2626; --muted:#6b7280; --shadow:0 10px 30px rgba(0,0,0,.08); }
+		html,body{height:100%;margin:0;font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial}
+		body{background:var(--bg);color:#111}
+		.wrap{min-height:100%;display:flex;flex-direction:column}
+		header{padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+		header a{color:#2563eb;text-decoration:none;font-weight:700}
+		.hud{display:flex;gap:12px;align-items:center}
+		.pill{background:#fff;box-shadow:var(--shadow);border-radius:999px;padding:8px 12px;font-weight:800}
+		.btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+		.btn.secondary{background:#e5e7eb;color:#111}
+
+		main{flex:1;display:flex;align-items:center;justify-content:center;padding:12px}
+		.panel{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:14px;width:min(980px,96vw)}
+		.board{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+		@media (max-width:880px){ .board{grid-template-columns:1fr;gap:18px} }
+		.scene{position:relative;background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}
+		.scene svg{display:block;width:100%;height:auto}
+		.mask{position:absolute;left:0;top:0;right:0;bottom:0}
+		.hotspot{position:absolute;border-radius:999px;border:2px dashed rgba(14,165,233,.9);background:rgba(14,165,233,.18);cursor:pointer;z-index:5;box-shadow:0 0 0 2px rgba(255,255,255,.6) inset}
+		.hotspot.found{border-color:rgba(22,163,74,.8);background:rgba(22,163,74,.12)}
+		.message{color:var(--muted);text-align:center;margin-top:8px}
+		.overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45)}
+		.overlay.open{display:flex}
+		.dialog{background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:16px;text-align:center;max-width:420px}
+		.ad-banner{height:60px;background:#fff;border-top:1px solid #eee;display:flex;align-items:center;justify-content:center}
+	</style>
+	<link rel="icon" href="/kiddoxy.png" type="image/png">
+	<link rel="manifest" href="/manifest.json">
+	<script defer src="/game-shell.js"></script>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body>
+	<div class="wrap">
+		<header>
+			<a href="/index.html">← Home</a>
+			<div class="hud">
+				<div class="pill">Found: <span id="found">0</span>/<span id="total">0</span></div>
+				<div class="pill">Time: <span id="time">60s</span></div>
+				<button class="btn secondary" id="btnNew">New Scene</button>
+			</div>
+		</header>
+
+		<main>
+			<section class="panel">
+				<h2 style="margin:0 0 8px">Find the Differences</h2>
+				<div class="board">
+					<div class="scene" id="sceneA"></div>
+					<div class="scene" id="sceneB"></div>
+				</div>
+				<div class="message">Tap on circles where the pictures differ.</div>
+			</section>
+		</main>
+
+		<div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+	</div>
+
+	<div id="modal" class="overlay" role="dialog" aria-modal="true">
+		<div class="dialog">
+			<h2 id="resultTitle">You Win!</h2>
+			<p id="resultDesc" class="message">Great spotting! Want another scene?</p>
+			<div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+				<button class="btn" id="btnPlayAgain">Play Again</button>
+				<a class="btn secondary" href="/index.html">Home</a>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// Lightweight web audio beeps
+		let _ac = null; function ac(){ const C = window.AudioContext||window.webkitAudioContext; if(!_ac && C){ _ac=new C(); } return _ac; }
+		function beep(f=880,d=0.08,t='sine',v=0.25){ const A=ac(); if(!A) return; if(A.state==='suspended'){ try{A.resume();}catch(_){} } const o=A.createOscillator(),g=A.createGain(); o.type=t; o.frequency.value=f; const n=A.currentTime; g.gain.setValueAtTime(v,n); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.connect(g).connect(A.destination); o.start(n); o.stop(n+d); }
+
+		const SCENES = [
+			// Real image pair: left.png vs ryt.png (same resolution recommended)
+			{
+				srcA: '/assets/games/spot-diff/left.png',
+				srcB: '/assets/games/spot-diff/ryt.png',
+				hotspots: [
+					{ x: 388, y: 399, r: 24 },
+					{ x: 470, y: 421, r: 24 }
+				] // Add more native pixel coords like {x:210,y:180,r:24}
+			}
+		];
+
+		let state = { idx: 0, found: 0, total: 0, timeLeft: 60, timerId: null };
+
+		function placeHotspotsScaled(container, hs, sx, sy, ox, oy){
+			container.querySelectorAll('.hotspot').forEach(el=>el.remove());
+			const rScale = Math.min(sx, sy);
+			hs.forEach((p, idx)=>{
+				const el = document.createElement('div');
+				const w = p.r*2*rScale, h = p.r*2*rScale;
+				el.className = 'hotspot';
+				el.style.width = w + 'px';
+				el.style.height = h + 'px';
+				el.style.left = (p.x*sx + ox - w/2) + 'px';
+				el.style.top  = (p.y*sy + oy - h/2) + 'px';
+				el.dataset.index = String(idx);
+				el.addEventListener('click', onSpot);
+				el.addEventListener('pointerdown', onSpot);
+				container.appendChild(el);
+			});
+		}
+
+		function placeHotspots(container, hs){
+			container.querySelectorAll('.hotspot').forEach(el=>el.remove());
+			hs.forEach((p, idx)=>{
+				const el = document.createElement('div');
+				el.className = 'hotspot'; el.style.width = (p.r*2)+'px'; el.style.height = (p.r*2)+'px';
+				el.style.left = (p.x - p.r)+'px'; el.style.top = (p.y - p.r)+'px';
+				el.dataset.index = String(idx);
+				el.addEventListener('click', onSpot);
+				el.addEventListener('pointerdown', onSpot);
+				container.appendChild(el);
+			});
+		}
+
+		function onSpot(e){
+			e.preventDefault(); e.stopPropagation();
+			const target = e.currentTarget;
+			if (target.classList.contains('found')) return;
+			target.classList.add('found');
+			const i = parseInt(target.dataset.index||'0',10);
+			// mark same hotspot on the other scene if exists
+			document.querySelectorAll(`.hotspot[data-index="${i}"]`).forEach(el=>el.classList.add('found'));
+			state.found += 1; updateHUD(); beep(720,0.08,'triangle',0.22);
+			if(state.found >= state.total){ endGame(true); }
+		}
+
+		function updateHUD(){
+			document.getElementById('found').textContent = String(state.found);
+			document.getElementById('total').textContent = String(state.total);
+		}
+
+		function startTimer(sec){
+			state.timeLeft = sec; const t = document.getElementById('time'); t.textContent = `${state.timeLeft}s`; t.style.color = '#111';
+			if(state.timerId) clearInterval(state.timerId);
+			state.timerId = setInterval(()=>{
+				state.timeLeft -= 1; t.textContent = `${state.timeLeft}s`;
+				if(state.timeLeft <= 10){ t.style.color = 'var(--warn)'; }
+				if(state.timeLeft <= 0){ clearInterval(state.timerId); endGame(false); }
+			},1000);
+		}
+
+		function endGame(won){
+			if(state.timerId) clearInterval(state.timerId);
+			document.querySelectorAll('.hotspot').forEach(h=>h.style.pointerEvents='none');
+			const modal = document.getElementById('modal'); modal.classList.add('open');
+			document.getElementById('resultTitle').textContent = won ? 'You Win! 🎉' : 'Time’s Up! ⏲️';
+			document.getElementById('resultDesc').textContent = won ? 'Great spotting! Want another scene?' : 'Try again and find them faster!';
+			beep(won?540:240,0.10, won?'sine':'sawtooth', 0.22);
+			if(won && window.Celebration){ try{ window.Celebration.celebrate(); }catch(_){} }
+		}
+
+		function newScene(){
+			const a = document.getElementById('sceneA');
+			const b = document.getElementById('sceneB');
+			const s = SCENES[(state.idx++) % SCENES.length];
+
+			a.innerHTML = ''; b.innerHTML = '';
+			// Create images
+			const imgA = new Image(), imgB = new Image();
+			imgA.src = s.srcA; imgB.src = s.srcB;
+			imgA.style.width = '100%'; imgA.style.height = '100%'; imgA.style.objectFit = 'contain';
+			imgB.style.width = '100%'; imgB.style.height = '100%'; imgB.style.objectFit = 'contain';
+
+			let loaded = 0; let natW = 0, natH = 0;
+			function tryPlace(){
+				loaded += 1; if(loaded < 2) return;
+				natW = imgA.naturalWidth; natH = imgA.naturalHeight;
+				// Set container aspect-ratio to native image ratio for perfect fit
+				a.style.aspectRatio = `${natW} / ${natH}`; b.style.aspectRatio = `${natW} / ${natH}`;
+				a.style.width = '100%'; b.style.width = '100%';
+				// After layout, compute scale relative to native
+				const rectA = a.getBoundingClientRect();
+				const sx = rectA.width / natW; const sy = rectA.height / natH;
+				const ox = 0, oy = 0; // no letterbox when aspect-ratio matches
+
+				state.found = 0; state.total = s.hotspots.length; updateHUD();
+				placeHotspotsScaled(a, s.hotspots, sx, sy, ox, oy);
+				placeHotspotsScaled(b, s.hotspots, sx, sy, ox, oy);
+				startTimer(60);
+
+				// Click logger to help capture native coordinates (remove if not needed)
+				[a,b].forEach(container=>{
+					container.onclick = (e)=>{
+						const r = container.getBoundingClientRect();
+						const x = (e.clientX - r.left) / sx;
+						const y = (e.clientY - r.top) / sy;
+						console.log('hotspot:', { x: Math.round(x), y: Math.round(y), r: 24 });
+					};
+				});
+			}
+			imgA.onload = tryPlace; imgB.onload = tryPlace;
+			a.appendChild(imgA); b.appendChild(imgB);
+		}
+
+		window.addEventListener('DOMContentLoaded', ()=>{
+			newScene();
+			document.getElementById('btnNew').addEventListener('click', ()=>{ document.getElementById('modal').classList.remove('open'); newScene(); });
+			document.getElementById('btnPlayAgain').addEventListener('click', ()=>{ document.getElementById('modal').classList.remove('open'); newScene(); });
+		});
+	</script>
+</body>
+</html>
+

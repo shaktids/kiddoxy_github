@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Find the Target</title>
+  <link rel="stylesheet" href="/styles.css">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      --bg-top: #eab308;
+      --bg-mid: #f59e0b;
+      --bg-bottom: #b45309;
+      --surface: #fff8eb;
+      --ink: #78350f;
+      --muted: #92400e;
+      --accent: #d97706;
+      --warn: #ef4444;
+      --accent-2: #b45309;
+      --ok: #34d399;
+      --panel: #fff8eb;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      font-family: "Baloo 2", "Comic Sans MS", "Trebuchet MS", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 14% 12%, #ffffffbe 0 12%, transparent 13%),
+        radial-gradient(circle at 86% 9%, #fff3c69f 0 13%, transparent 14%),
+        linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 58%, var(--bg-bottom) 100%);
+      padding-bottom: 92px;
+    }
+
+    .wrap {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .shell {
+      width: min(560px, 96vw);
+      margin: 12px auto 14px;
+      padding: 12px;
+      border-radius: 24px;
+      border: 3px solid #ffffffc2;
+      background: var(--panel);
+      box-shadow: 0 18px 34px #124f9440;
+      backdrop-filter: blur(3px);
+      animation: ftFade 0.4s ease-out;
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      padding: 2px;
+    }
+
+    .title-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #ffffffed;
+      border: 2px solid #d8eaff;
+      border-radius: 999px;
+      padding: 8px 12px;
+      box-shadow: 0 8px 14px #2563eb2e;
+    }
+
+    .title-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 11px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 1.15rem;
+      background: linear-gradient(150deg, #3b82f6, #1d4ed8);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.05rem, 3.7vw, 1.85rem);
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .helper {
+      margin: 0 0 10px;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .status-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .stats {
+      background: #fffbeb;
+      border: 2px solid #fcd34d;
+      border-radius: 999px;
+      padding: 8px 10px;
+      text-align: center;
+      font-weight: 800;
+      color: #92400e;
+    }
+
+    .hud {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      background: #ffffffde;
+      border: 1px solid #d7e8ff;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: #1f4b78;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: #fff;
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+      letter-spacing: 0.2px;
+      background: linear-gradient(180deg, #2563eb, #1e40af);
+      box-shadow: 0 7px 12px #1d4ed853;
+    }
+
+    .board-shell {
+      background: #fff;
+      border-radius: 16px;
+      padding: 10px;
+      box-shadow: 0 8px 18px rgba(2, 6, 23, 0.08);
+      border: 2px solid #e7f0ff;
+    }
+
+    .hint-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 0.94rem;
+    }
+
+    .target-badge {
+      border-radius: 999px;
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      color: #9f1239;
+      padding: 6px 10px;
+      font-weight: 800;
+      font-size: 0.9rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      width: 100%;
+    }
+
+    .cell {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      border-radius: 12px;
+      min-height: 82px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      border: 2px solid transparent;
+      transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
+      font-size: clamp(1.1rem, 3.8vw, 1.5rem);
+      font-weight: 800;
+      color: #1f4b78;
+      touch-action: manipulation;
+      box-shadow: 0 6px 14px rgba(2, 6, 23, 0.06);
+    }
+
+    .cell:hover { transform: translateY(-2px); }
+    .cell:active { transform: scale(0.97); }
+
+    .target {
+      border-color: var(--accent-2);
+      box-shadow: 0 0 0 4px #ff6b6b30, 0 6px 18px #ff6b6b29;
+      background: linear-gradient(180deg, #fff3f5 0%, #ffe9ed 100%);
+      color: #9f1239;
+    }
+
+    .cell.ok {
+      border-color: var(--ok);
+      box-shadow: 0 0 0 4px #34d3992b;
+    }
+
+    .cell.bad {
+      border-color: #f87171;
+      box-shadow: 0 0 0 4px #f8717131;
+    }
+
+    .cele {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      background: #082e5063;
+      padding: 14px;
+    }
+
+    .cele.show { display: flex; }
+
+    .cele .card {
+      background: #fffffffc;
+      padding: 18px;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+      text-align: center;
+      border: 2px solid #d7eaff;
+    }
+
+    .ad-banner {
+      height: 54px;
+      background: #fff;
+      border-top: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .fixed-controls {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 30;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(234,179,8,0), rgba(234,179,8,0.97));
+      backdrop-filter: blur(4px);
+    }
+
+    .fixed-controls .btn {
+      width: 100%;
+    }
+
+    .howto-btn {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      z-index: 1001;
+      background: linear-gradient(180deg, #2563eb, #1e40af);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 54px;
+      height: 54px;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+      font-size: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .howto-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+      padding: 14px;
+    }
+
+    .howto-modal.open { display: flex; }
+
+    .howto-dialog {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.13);
+      padding: 22px 18px 14px;
+      max-width: 390px;
+      text-align: center;
+      color: #18385a;
+      border: 2px solid #d8eaff;
+    }
+
+    .howto-dialog h2 { margin-top: 0; }
+
+    .howto-dialog button {
+      margin-top: 14px;
+      background: #1d4ed8;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 22px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    @keyframes ftFade {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 760px) {
+      .shell { padding: 10px; border-radius: 18px; }
+      .hud { width: 100%; }
+      .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .cell { min-height: 76px; }
+    }
+
+    @media (max-width: 430px) {
+      .shell { width: min(100%, 96vw); margin: 10px auto; }
+      .title-icon { width: 34px; height: 34px; font-size: 1rem; }
+      .grid { gap: 8px; }
+      .cell { min-height: 68px; border-radius: 10px; }
+      .howto-btn { width: 50px; height: 50px; right: 12px; bottom: 12px; }
+      .status-row { grid-template-columns: 1fr; }
+    }
+  </style>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="shell">
+      <div class="top">
+        <div class="title-wrap">
+          <span class="title-icon">🎯</span>
+          <h1>Find the Target</h1>
+        </div>
+        <div class="hud">
+          <div class="pill">Score: <strong id="score">0</strong></div>
+          <div class="pill">Best: <strong id="best">0</strong></div>
+          <button id="newRound" class="btn">New Round</button>
+        </div>
+      </div>
+
+      <p class="helper">Find the hidden treasure target as fast as you can.</p>
+
+      <div class="status-row">
+        <div class="stats">Score: <span id="scoreMirror">0</span></div>
+        <div class="stats">Best: <span id="bestMirror">0</span></div>
+      </div>
+
+      <div class="board-shell board">
+        <div class="hint-row">
+          <div class="hint">Tap the highlighted cell as quickly as you can.</div>
+          <div class="target-badge" id="targetLabel">Target: #1</div>
+        </div>
+        <div class="grid" id="grid"></div>
+      </div>
+    </div>
+
+    <div class="fixed-controls">
+      <button id="newRoundFixed" class="btn">New Round</button>
+    </div>
+
+    <div class="ad-banner" aria-hidden="true">AD_BANNER_PLACEHOLDER</div>
+
+    <div id="cele" class="cele"><div class="card"><h2>Awesome! 🎉</h2><p>Great focus and speed!</p></div></div>
+  </div>
+
+  <button class="howto-btn" id="howtoBtn" title="How to Play" aria-label="How to Play">?</button>
+  <div class="howto-modal" id="howtoModal" role="dialog" aria-modal="true" aria-labelledby="howtoTitle">
+    <div class="howto-dialog">
+      <h2 id="howtoTitle">How to Play</h2>
+      <div id="howtoContent">
+        Tap the red highlighted target cell. Every correct tap gives +1 and moves the target. Wrong tap gives -1.
+      </div>
+      <button id="howtoClose">Close</button>
+    </div>
+  </div>
+
+  <script>
+    const howtoBtn = document.getElementById('howtoBtn');
+    const howtoModal = document.getElementById('howtoModal');
+    const howtoClose = document.getElementById('howtoClose');
+    howtoBtn.addEventListener('click', () => { howtoModal.classList.add('open'); });
+    howtoClose.addEventListener('click', () => { howtoModal.classList.remove('open'); });
+    howtoModal.addEventListener('click', (e) => {
+      if (e.target === howtoModal) howtoModal.classList.remove('open');
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') howtoModal.classList.remove('open');
+    });
+
+    const grid = document.getElementById('grid');
+    const scoreEl = document.getElementById('score');
+    const bestEl = document.getElementById('best');
+    const newBtn = document.getElementById('newRound');
+    const targetLabel = document.getElementById('targetLabel');
+    const cele = document.getElementById('cele');
+
+    const cellsCount = 12;
+    let score = 0;
+    let best = Number(localStorage.getItem('kdx_find_target_best') || 0);
+    let targetIndex = -1;
+
+    bestEl.textContent = String(best);
+
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ac = AC ? new AC() : null;
+    function beep(freq, dur, type, vol) {
+      if (!ac) return;
+      if (ac.state === 'suspended') {
+        ac.resume().catch(() => {});
+      }
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = type || 'sine';
+      o.frequency.value = freq || 660;
+      g.gain.value = vol || 0.08;
+      o.connect(g);
+      g.connect(ac.destination);
+      o.start();
+      o.stop(ac.currentTime + (dur || 0.08));
+    }
+
+    function updateTargetLabel() {
+      targetLabel.textContent = 'Target: #' + (targetIndex + 1);
+    }
+
+    function updateBest() {
+      if (score > best) {
+        best = score;
+        localStorage.setItem('kdx_find_target_best', String(best));
+        bestEl.textContent = String(best);
+        var bestMirror = document.getElementById('bestMirror');
+        if (bestMirror) bestMirror.textContent = String(best);
+      }
+    }
+
+    function makeGrid() {
+      grid.innerHTML = '';
+      for (let i = 0; i < cellsCount; i++) {
+        const d = document.createElement('div');
+        d.className = 'cell';
+        d.textContent = i + 1;
+        d.dataset.index = String(i);
+        d.addEventListener('click', onClick);
+        grid.appendChild(d);
+      }
+    }
+
+    function placeTarget() {
+      if (targetIndex >= 0) {
+        const prev = grid.children[targetIndex];
+        if (prev) prev.classList.remove('target');
+      }
+      targetIndex = Math.floor(Math.random() * cellsCount);
+      const targetCell = grid.children[targetIndex];
+      if (targetCell) targetCell.classList.add('target');
+      updateTargetLabel();
+    }
+
+    function burstCelebrate() {
+      cele.classList.add('show');
+      setTimeout(() => cele.classList.remove('show'), 1800);
+      for (let i = 0; i < 8; i++) {
+        const b = document.createElement('div');
+        b.style.position = 'fixed';
+        b.style.left = (10 + Math.random() * 80) + '%';
+        b.style.bottom = '-20px';
+        b.style.width = '34px';
+        b.style.height = '44px';
+        b.style.background = ['#ff5c8a', '#ffd166', '#8bd3ff', '#7bf1a8'][i % 4];
+        b.style.borderRadius = '50%';
+        b.style.opacity = '0.95';
+        b.style.zIndex = '220';
+        b.style.transition = 'transform 2.2s linear, bottom 2.2s linear';
+        document.body.appendChild(b);
+        setTimeout(() => {
+          b.style.bottom = '110%';
+          b.style.transform = 'translateY(-100vh)';
+        }, 40);
+        setTimeout(() => b.remove(), 2300);
+      }
+    }
+
+    function onClick(e) {
+      const cell = e.currentTarget;
+      const idx = Number(cell.dataset.index);
+      if (idx === targetIndex) {
+        score += 1;
+        scoreEl.textContent = String(score);
+        updateBest();
+        cell.classList.add('ok');
+        beep(820, 0.08, 'triangle', 0.1);
+        if (score > 0 && score % 10 === 0) {
+          burstCelebrate();
+        }
+        setTimeout(() => cell.classList.remove('ok'), 180);
+        placeTarget();
+      } else {
+        score = Math.max(0, score - 1);
+        scoreEl.textContent = String(score);
+        cell.classList.add('bad');
+        beep(240, 0.1, 'sawtooth', 0.08);
+        setTimeout(() => cell.classList.remove('bad'), 220);
+      }
+    }
+
+    newBtn.addEventListener('click', () => {
+      score = 0;
+      scoreEl.textContent = '0';
+      var scoreMirror = document.getElementById('scoreMirror');
+      if (scoreMirror) scoreMirror.textContent = '0';
+      placeTarget();
+    });
+
+    makeGrid();
+    placeTarget();
+    document.getElementById('bestMirror').textContent = String(best);
+
+    const syncScore = new MutationObserver(() => {
+      var scoreMirror = document.getElementById('scoreMirror');
+      if (scoreMirror) scoreMirror.textContent = scoreEl.textContent;
+    });
+    syncScore.observe(scoreEl, { childList: true, subtree: true, characterData: true });
+  </script>
+
+  <script>
+    document.getElementById('newRoundFixed').addEventListener('click', function(){
+      document.getElementById('newRound').click();
+    });
+  </script>
+
+  <div id="ageModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Age verification">
+    <div class="modal-content">
+      <h2>Are you a parent?</h2>
+      <p>Please enter your birth year to continue to parental settings.</p>
+      <input id="birthYear" type="number" placeholder="e.g. 1980" min="1900" max="2025" />
+      <div class="modal-actions">
+        <button id="ageSubmit">Confirm</button>
+        <button id="ageCancel" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { injectNavbar } from '/scripts/navbar-footer.js';
+    injectNavbar();
+    window.addEventListener('DOMContentLoaded', () => {
+      var parentBtn = document.getElementById('parent-btn');
+      if (parentBtn) {
+        parentBtn.addEventListener('click', function(){
+          if (typeof showParentalGate === 'function') showParentalGate();
+        });
+      }
+      var ageSubmit = document.getElementById('ageSubmit');
+      if (ageSubmit) {
+        ageSubmit.addEventListener('click', function(){
+          const year = parseInt(document.getElementById('birthYear').value || '0', 10);
+          if (isNaN(year)) return;
+          if (typeof handleParentalConfirm === 'function') handleParentalConfirm(year);
+        });
+      }
+      var ageCancel = document.getElementById('ageCancel');
+      if (ageCancel) {
+        ageCancel.addEventListener('click', function(){
+          if (typeof closeParentalModal === 'function') closeParentalModal();
+        });
+      }
+    });
+  </script>
+
+  <script src="/game-shell.js"></script>
+
+  <script>
+  // find target: page-specific tutorial (voice + hand pointer)
+  (function(){
+    const KEY = 'kdx_tut_target_v1';
+    function speak(text){
+      try {
+        if (!('speechSynthesis' in window)) return;
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        u.rate = 0.98;
+        u.pitch = 1.0;
+        u.volume = 1.0;
+        speechSynthesis.cancel();
+        speechSynthesis.speak(u);
+      } catch (_) {}
+    }
+    function ensureStyle(){
+      if(document.getElementById('odd-tut-style')) return;
+      const st = document.createElement('style');
+      st.id = 'odd-tut-style';
+      st.textContent = '@keyframes oddHand {0%{transform:translate(-50%,-2%)} 50%{transform:translate(-50%,2%)} 100%{transform:translate(-50%,-2%)}} @keyframes oddPulse {0%{ box-shadow:0 0 0 0 rgba(239,68,68,.35)} 70%{ box-shadow:0 0 0 14px rgba(239,68,68,0)} 100%{ box-shadow:0 0 0 0 rgba(239,68,68,0)}}';
+      document.head.appendChild(st);
+    }
+    function hand(target){ ensureStyle(); const d=document.createElement('div'); d.textContent='Tap'; d.style.position='fixed'; d.style.zIndex='10002'; d.style.padding='4px 8px'; d.style.borderRadius='999px'; d.style.fontWeight='800'; d.style.background='#fff'; d.style.border='2px solid #fda4af'; d.style.color='#be123c'; d.style.pointerEvents='none'; d.style.animation='oddHand 1.2s ease-in-out infinite'; posHand(d,target); return d; }
+    function posHand(el,target){ const r=target.getBoundingClientRect(); const x=r.left + Math.min(r.width, 120)*0.75; const y=r.top + r.height + 6; el.style.left=Math.max(24,Math.min(window.innerWidth-24,x))+'px'; el.style.top=Math.max(24,Math.min(window.innerHeight-24,y))+'px'; el.style.transform='translate(-50%,-2%)'; }
+    function ring(target){ ensureStyle(); const d=document.createElement('div'); d.style.position='fixed'; d.style.zIndex='10001'; d.style.pointerEvents='none'; d.style.borderRadius='999px'; d.style.border='3px solid #ef4444'; d.style.animation='oddPulse 1.4s ease-out infinite'; d.style.background='rgba(239,68,68,.08)'; posRing(d,target); return d; }
+    function posRing(el,target){ const r=target.getBoundingClientRect(); const size=Math.max(40,Math.min(120,Math.max(r.width,r.height))); el.style.width=size+'px'; el.style.height=size+'px'; const x=r.left + r.width/2; const y=r.top + r.height/2; el.style.left=Math.max(12,Math.min(window.innerWidth-12,x))+'px'; el.style.top=Math.max(12,Math.min(window.innerHeight-12,y))+'px'; el.style.transform='translate(-50%,-50%)'; }
+
+    function currentTarget(){ return document.querySelector('.cell.target'); }
+
+    function startTutorial(){
+      if(localStorage.getItem(KEY)) return;
+      let tries=0;
+      const max=80;
+      const tick=()=>{
+        tries++;
+        const t=currentTarget();
+        if(t){ step1(t); }
+        else if(tries<max){ setTimeout(tick,50); }
+      };
+      tick();
+    }
+
+    function step1(t){
+      let h=null, r=null;
+      const clean=()=>{ try{ speechSynthesis.cancel(); }catch(_){} if(h) h.remove(); if(r) r.remove(); h=null; r=null; };
+      const onResize = ()=>{ if(h) posHand(h,t); if(r) posRing(r,t); };
+      window.addEventListener('resize', onResize);
+      r = ring(t); document.body.appendChild(r);
+      h = hand(t); document.body.appendChild(h);
+      speak('Tap the red target cell.');
+      const onClick = (e)=>{
+        if(e.currentTarget!==t) return;
+        window.removeEventListener('resize', onResize);
+        clean();
+        setTimeout(step2, 220);
+      };
+      t.addEventListener('click', onClick, { once:true });
+    }
+
+    function step2(){
+      let tries=0;
+      const max=80;
+      const wait=()=>{
+        tries++;
+        const t=currentTarget();
+        if(t){ guide(t); }
+        else if(tries<max){ setTimeout(wait,50); }
+        else { localStorage.setItem(KEY,'1'); }
+      };
+      wait();
+
+      function guide(t){
+        let h=null, r=null;
+        const clean=()=>{ try{ speechSynthesis.cancel(); }catch(_){} if(h) h.remove(); if(r) r.remove(); h=null; r=null; };
+        const onResize = ()=>{ if(h) posHand(h,t); if(r) posRing(r,t); };
+        window.addEventListener('resize', onResize);
+        r = ring(t); document.body.appendChild(r);
+        h = hand(t); document.body.appendChild(h);
+        speak('Great! Tap the new target again.');
+        const onClick = (e)=>{
+          if(e.currentTarget!==t) return;
+          window.removeEventListener('resize', onResize);
+          clean();
+          localStorage.setItem(KEY,'1');
+        };
+        t.addEventListener('click', onClick, { once:true });
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', startTutorial);
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Odd One Out</title>
+  <style>
+    :root{
+      --bg: #fbfbff;
+      --surface: #ffffff;
+      --accent: #22c55e;
+      --warn: #dc2626;
+      --muted: #6b7280;
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
+    }
+    html,body{height:100%;margin:0;font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;background:var(--bg);color:#111}
+    .wrap{min-height:100%;display:flex;flex-direction:column}
+    header{padding:12px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+    header a{color:var(--accent);text-decoration:none;font-weight:700}
+    .hud{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .pill{background:#dcfce7;color:#1f2937;border-radius:999px;padding:8px 12px;font-weight:700;min-width:110px;text-align:center}
+    .btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+    .btn.secondary{background:#e5e7eb;color:#111}
+
+    main{flex:1;display:grid;grid-template-columns:1fr;gap:16px;padding:12px}
+    .panel{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:14px}
+    .title{margin:0 0 6px;font-size:20px}
+
+    .board{display:grid;justify-content:center;gap:14px;min-height:420px}
+    .cell{width:84px;height:84px;background:#f8fafc;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(34,197,94,.16);cursor:pointer}
+    .cell:active{transform:scale(0.98)}
+
+    .controls{display:flex;gap:10px;justify-content:center;margin-top:10px}
+
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:16px}
+    .modal.open{display:flex}
+    .dialog{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:18px;max-width:420px;text-align:center}
+    .dialog h2{margin:0 0 10px}
+    .dialog p{color:var(--muted)}
+    .ad-banner{height:60px;background:#fff;border-top:1px solid #eee;display:flex;align-items:center;justify-content:center}
+  </style>
+  <link rel="icon" href="/kiddoxy.png" type="image/png">
+  <link rel="manifest" href="/manifest.json">
+  <script defer src="/game-shell.js"></script>
+  <script>
+    // --- Audio helpers ---
+    let _audioCtx = null;
+    function getAudioCtx(){
+      if(!_audioCtx || _audioCtx.state === 'closed'){
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if(!AC) return null;
+        _audioCtx = new AC();
+      }
+      return _audioCtx;
+    }
+    function playBeep(freq=660, duration=0.08, type='sine', volume=0.25){
+      const ac = getAudioCtx(); if(!ac) return;
+      if(ac.state === 'suspended'){ try{ ac.resume(); }catch(_){} }
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = type; osc.frequency.value = freq;
+      const now = ac.currentTime;
+      gain.gain.setValueAtTime(volume, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(now);
+      osc.stop(now + duration);
+    }
+
+    // --- Car icon (base vs odd variant) ---
+    function carSVG({color="#22c55e", odd=false}){
+      const body = odd ? "#16a34a" : color;
+      const siren = odd ? '<circle cx="54" cy="26" r="5" fill="#f97316"/>' : '';
+      const bumper = odd ? '#0ea5e9' : '#94a3b8';
+      return `<svg width="76" height="64" viewBox="0 0 76 64" xmlns="http://www.w3.org/2000/svg" aria-label="${odd?'Odd':'Car'}">
+        <rect x="12" y="22" width="52" height="18" rx="6" fill="${body}" stroke="#15803d" stroke-width="2"/>
+        <rect x="20" y="14" width="30" height="10" rx="5" fill="#86efac" stroke="#15803d" stroke-width="2"/>
+        ${siren}
+        <rect x="14" y="40" width="48" height="6" rx="3" fill="${bumper}"/>
+        <circle cx="26" cy="50" r="6" fill="#111"/><circle cx="50" cy="50" r="6" fill="#111"/>
+      </svg>`;
+    }
+
+    // --- State ---
+    let state = { rows:5, cols:5, rounds:7, current:0, score:0, timeLeft:12, timerId:null, gameOver:false, oddIndex:0 };
+
+    function initSession(){
+      state.rows = 5; state.cols = 5; // default grid like screenshot
+      state.rounds = 5 + Math.floor(Math.random()*6); // 5..10
+      state.current = 0; state.score = 0; state.gameOver=false;
+      newRound(); updateHud();
+    }
+
+    function gridSetup(){
+      const board = document.getElementById('board');
+      board.style.gridTemplateColumns = `repeat(${state.cols}, 84px)`;
+      board.style.gridTemplateRows = `repeat(${state.rows}, 84px)`;
+      board.innerHTML = '';
+      const total = state.rows * state.cols;
+      state.oddIndex = Math.floor(Math.random()*total);
+      for(let i=0;i<total;i++){
+        const cell = document.createElement('button'); cell.className='cell'; cell.setAttribute('aria-label','grid cell'); cell.dataset.index=i;
+        const isOdd = i===state.oddIndex;
+        cell.innerHTML = carSVG({ odd: isOdd });
+        cell.onclick = () => selectCell(isOdd);
+        board.appendChild(cell);
+      }
+    }
+
+    function selectCell(isOdd){
+      if(state.gameOver) return;
+      if(isOdd){
+        playBeep(820,0.10,'sine',0.28);
+        state.score += 1; nextOrFinish();
+      } else {
+        playBeep(300,0.08,'square',0.2);
+      }
+    }
+
+    function nextOrFinish(){
+      clearInterval(state.timerId);
+      state.current += 1;
+      if(state.current >= state.rounds){ endGame(true); return; }
+      newRound();
+    }
+
+    function newRound(){
+      // Randomize subtle difficulty: sometimes 4x4..6x6
+      const sizes = [[4,4],[5,5],[6,5],[5,6]];
+      const pick = sizes[Math.floor(Math.random()*sizes.length)];
+      state.rows = pick[0]; state.cols = pick[1];
+      gridSetup(); resetTimer(12);
+      updateHud();
+    }
+
+    function resetTimer(seconds){
+      state.timeLeft=seconds; const t=document.getElementById('time'); t.textContent=`${state.timeLeft}s`; t.style.color='#111';
+      if(state.timerId) clearInterval(state.timerId);
+      state.timerId=setInterval(()=>{
+        state.timeLeft-=1; t.textContent=`${state.timeLeft}s`; if(state.timeLeft<=4){ t.style.color='var(--warn)'; }
+        if(state.timeLeft<=0){ clearInterval(state.timerId); nextOrFinish(); }
+      },1000);
+    }
+
+    function updateHud(){
+      document.getElementById('round').textContent = `${state.current+1}/${state.rounds}`;
+      document.getElementById('score').textContent = `${state.score}`;
+    }
+
+    function endGame(won){
+      state.gameOver=true; if(state.timerId) clearInterval(state.timerId);
+      const modal=document.getElementById('modal'); modal.classList.add('open');
+      document.getElementById('resultTitle').textContent = 'Session Complete!';
+      document.getElementById('resultDesc').textContent = `You found ${state.score} odd ones out in ${state.rounds} rounds.`;
+      playBeep(720,0.12,'sine',0.26);
+      if(window.Celebration){ try{ window.Celebration.celebrate(); }catch(_){} }
+    }
+
+    function restart(){ document.getElementById('modal').classList.remove('open'); initSession(); }
+
+    window.addEventListener('DOMContentLoaded', initSession);
+  </script>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a href="/index.html">← Home</a>
+      <div class="hud">
+        <div class="pill">Round: <span id="round">1/7</span></div>
+        <div class="pill">Time: <span id="time">12s</span></div>
+        <div class="pill">Score: <span id="score">0</span></div>
+        <button class="btn" onclick="initSession()">New Session</button>
+      </div>
+    </header>
+    <main>
+      <section class="panel">
+        <h2 class="title">Find the Odd One Out!</h2>
+        <div id="board" class="board"></div>
+        <div class="controls" style="color:var(--muted)">Tap the one that looks different. Quick rounds: 5–10 per session.</div>
+      </section>
+    </main>
+    <div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+  </div>
+  <div id="modal" class="modal" role="dialog" aria-modal="true">
+    <div class="dialog">
+      <h2 id="resultTitle">Session Complete!</h2>
+      <p id="resultDesc">You found them all!</p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+        <button class="btn" onclick="restart()">Play Again</button>
+        <a class="btn secondary" href="/index.html">Home</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

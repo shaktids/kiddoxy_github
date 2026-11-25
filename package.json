@@ -1,0 +1,12 @@
+{
+  "name": "kiddoxy",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "npx http-server . -p 8080 -a 0.0.0.0",
+    "start": "npx http-server . -p 8080 -a 0.0.0.0",
+    "build": "node scripts/generate-packs.mjs && node scripts/build-pages.mjs",
+    "check": "node scripts/generate_games_index.js",
+    "packs": "node scripts/generate-packs.mjs"
+  }
+}

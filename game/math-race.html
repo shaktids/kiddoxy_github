@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Math Race</title>
+  <link rel="icon" href="/kiddoxy.png" type="image/png">
+  <link rel="stylesheet" href="/styles/kid-kit.css">
+  <link rel="stylesheet" href="/styles/quiz-race.css">
+  <script defer src="/scripts/game-brand.js"></script>
+  <script defer src="/game-shell.js"></script>
+  <script src="/scripts/kid-kit.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="game-header">
+    <h1>🧮 Math Race</h1>
+    <div class="hud">
+      <span class="pill">Place: <span id="place">–</span></span>
+      <button class="btn secondary icon-btn" id="muteBtn" aria-label="Sound">🔊</button>
+    </div>
+  </header>
+  <main class="game-main">
+    <div class="panel">
+      <div class="track" id="track" aria-label="Race track"></div>
+      <div id="startPanel" class="start-panel">
+        <p class="prompt" style="margin-top:16px">Answer the sums to zoom past the animals!</p>
+        <div class="seg" id="levelSeg" role="group" aria-label="Level"><button data-level="0" class="active">Up to 10</button><button data-level="1">Up to 20</button><button data-level="2">Up to 50</button></div>
+        <div><button class="btn" id="go">🏁 Start race</button></div>
+      </div>
+      <div id="racePanel" hidden>
+        <div class="question" id="question" aria-live="polite"></div>
+        <div class="options" id="options"></div>
+        <div class="feedback" id="feedback" aria-live="polite"></div>
+      </div>
+    </div>
+  </main>
+  <div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+</div>
+<script>
+// Math Race questions: level 0 = add within 10, 1 = add/subtract within 20, 2 = add/subtract within 50
+window.QUIZ_RACE = {
+  key: 'math-race',
+  question(level) {
+    const max = [10, 20, 50][level];
+    let a, b, op, ans;
+    if (level === 0 || Math.random() < 0.5) { a = Kit.rand(0, max / 2); b = Kit.rand(0, max / 2); op = '+'; ans = a + b; }
+    else { a = Kit.rand(2, max); b = Kit.rand(0, a); op = '−'; ans = a - b; }
+    const opts = new Set([ans]);
+    while (opts.size < 4) { const w = ans + Kit.rand(-4, 4); if (w >= 0) opts.add(w); }
+    return { text: `${a} ${op} ${b} = ?`, answer: ans, options: [...opts] };
+  }
+};
+</script>
+<script src="/scripts/quiz-race.js"></script>
+</body>
+</html>

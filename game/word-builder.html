@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Word Builder</title>
+  <style>
+    :root{
+      --bg: #fbfbff;
+      --surface: #ffffff;
+      --accent: #6366f1;
+      --warn: #dc2626;
+      --muted: #6b7280;
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --gray: #94a3b8;
+    }
+    html,body{height:100%;margin:0;font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;background:var(--bg);color:#111}
+    .wrap{min-height:100%;display:flex;flex-direction:column}
+    header{padding:12px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+    header a{color:var(--accent);text-decoration:none;font-weight:700}
+    .hud{display:flex;gap:12px;align-items:center}
+    .pill{background:#e0e7ff;color:#1f2937;border-radius:999px;padding:8px 12px;font-weight:700;min-width:90px;text-align:center}
+    .btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+    .btn.secondary{background:#e5e7eb;color:#111}
+
+    main{flex:1;display:grid;grid-template-columns:320px 1fr;gap:16px;padding:12px}
+    @media (max-width:900px){ main{grid-template-columns:1fr;grid-auto-rows:minmax(280px,auto)} }
+    .panel{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:14px}
+    .title{margin:0 0 6px;font-size:20px}
+
+    .clue-card{display:flex;flex-direction:column;align-items:center;gap:10px;background:#f8fafc;border-radius:14px;padding:14px;margin-bottom:14px;text-align:center}
+    .clue-image{width:100%;max-width:240px;aspect-ratio:1/1;object-fit:cover;border-radius:14px;background:#e0e7ff;box-shadow:0 6px 16px rgba(99,102,241,.14)}
+
+    .tray{display:flex;flex-wrap:wrap;gap:12px;align-content:flex-start;justify-content:center;min-height:180px}
+    .letter{width:64px;height:64px;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none;cursor:pointer;border-radius:12px;background:#f8fafc;box-shadow:0 4px 12px rgba(99,102,241,.18);font-weight:900;font-size:26px}
+    .letter.used{opacity:.3;pointer-events:none}
+
+    .board{position:relative;min-height:420px;display:flex;flex-direction:column;gap:12px}
+    .guess-row{display:flex;gap:10px;justify-content:center}
+    .tile{width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#f3f4f6;color:#111;font-weight:900;font-size:24px}
+    .tile.green{background:var(--green);color:#fff}
+    .tile.yellow{background:var(--yellow);color:#111}
+    .tile.gray{background:var(--gray);color:#fff}
+
+    .controls{display:flex;gap:10px;justify-content:center;margin-top:10px}
+
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:16px}
+    .modal.open{display:flex}
+    .dialog{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:18px;max-width:420px;text-align:center}
+    .dialog h2{margin:0 0 10px}
+    .dialog p{color:var(--muted)}
+    .ad-banner{height:60px;background:#fff;border-top:1px solid #eee;display:flex;align-items:center;justify-content:center}
+  </style>
+  <link rel="icon" href="/kiddoxy.png" type="image/png">
+  <link rel="manifest" href="/manifest.json">
+  <script defer src="/game-shell.js"></script>
+  <script>
+    // --- Audio helpers ---
+    let _audioCtx = null;
+    function getAudioCtx(){
+      if(!_audioCtx || _audioCtx.state === 'closed'){
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if(!AC) return null;
+        _audioCtx = new AC();
+      }
+      return _audioCtx;
+    }
+    function playBeep(freq=660, duration=0.08, type='sine', volume=0.25){
+      const ac = getAudioCtx(); if(!ac) return;
+      if(ac.state === 'suspended'){ try{ ac.resume(); }catch(_){} }
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = type; osc.frequency.value = freq;
+      const now = ac.currentTime;
+      gain.gain.setValueAtTime(volume, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(now);
+      osc.stop(now + duration);
+    }
+
+    const WORD_BANK = [
+      { word: 'CAT', clue: 'A tiny pet that purrs.', emoji: '🐱', color: '#f9a8d4' },
+      { word: 'DOG', clue: 'A friendly pet that barks.', emoji: '🐶', color: '#fdba74' },
+      { word: 'BIRD', clue: 'A flying animal with feathers.', emoji: '🐦', color: '#93c5fd' },
+      { word: 'FISH', clue: 'An animal that swims in water.', emoji: '🐟', color: '#67e8f9' },
+      { word: 'FROG', clue: 'A jumping animal that loves ponds.', emoji: '🐸', color: '#86efac' },
+      { word: 'BEAR', clue: 'A big furry forest animal.', emoji: '🐻', color: '#d6a57a' },
+      { word: 'LION', clue: 'The king of the jungle.', emoji: '🦁', color: '#fde68a' },
+      { word: 'TREE', clue: 'It has branches and leaves.', emoji: '🌳', color: '#bbf7d0' },
+      { word: 'SUN', clue: 'The bright star in the sky.', emoji: '☀️', color: '#fde68a' },
+      { word: 'MOON', clue: 'It shines at night.', emoji: '🌙', color: '#c7d2fe' },
+      { word: 'STAR', clue: 'A shape that twinkles in the sky.', emoji: '⭐', color: '#fef08a' },
+      { word: 'BOOK', clue: 'You read stories in it.', emoji: '📚', color: '#c4b5fd' },
+      { word: 'CUP', clue: 'You drink from it.', emoji: '☕', color: '#fed7aa' },
+      { word: 'BALL', clue: 'You can throw, kick, or bounce it.', emoji: '⚽', color: '#93c5fd' },
+      { word: 'CAR', clue: 'A vehicle with wheels.', emoji: '🚗', color: '#bfdbfe' },
+      { word: 'SHIP', clue: 'A boat that sails on water.', emoji: '🚢', color: '#bae6fd' },
+      { word: 'TRAIN', clue: 'It runs on tracks.', emoji: '🚆', color: '#fecaca' },
+      { word: 'HOUSE', clue: 'A place where people live.', emoji: '🏠', color: '#fde68a' },
+      { word: 'APPLE', clue: 'A crunchy fruit.', emoji: '🍎', color: '#fda4af' },
+      { word: 'GRAPE', clue: 'Small sweet fruit that grows in bunches.', emoji: '🍇', color: '#ddd6fe' },
+      { word: 'MANGO', clue: 'A juicy tropical fruit.', emoji: '🥭', color: '#fdba74' },
+      { word: 'PEAR', clue: 'A green fruit with a round bottom.', emoji: '🍐', color: '#bbf7d0' },
+      { word: 'BERRY', clue: 'A small juicy fruit.', emoji: '🫐', color: '#c4b5fd' },
+      { word: 'PANDA', clue: 'A black-and-white bear.', emoji: '🐼', color: '#e2e8f0' },
+      { word: 'ZEBRA', clue: 'An animal with black and white stripes.', emoji: '🦓', color: '#f1f5f9' },
+      { word: 'TIGER', clue: 'A striped big cat.', emoji: '🐯', color: '#fdba74' },
+      { word: 'SHEEP', clue: 'A fluffy farm animal.', emoji: '🐑', color: '#f8fafc' },
+      { word: 'DUCK', clue: 'A bird that quacks.', emoji: '🦆', color: '#fde68a' },
+      { word: 'QUEEN', clue: 'A royal ruler.', emoji: '👑', color: '#fde68a' },
+      { word: 'BRUSH', clue: 'You use it to paint or clean.', emoji: '🖌️', color: '#fecaca' },
+      { word: 'CLOUD', clue: 'It floats in the sky and can bring rain.', emoji: '☁️', color: '#e2e8f0' },
+      { word: 'FLOWER', clue: 'It blooms with petals.', emoji: '🌸', color: '#fbcfe8' },
+      { word: 'DRUM', clue: 'You tap it to make music.', emoji: '🥁', color: '#fde68a' },
+      { word: 'PLANE', clue: 'It flies high in the sky.', emoji: '✈️', color: '#bfdbfe' },
+      { word: 'SNAKE', clue: 'A long animal that slithers.', emoji: '🐍', color: '#86efac' },
+      { word: 'SPOON', clue: 'You use it to eat soup.', emoji: '🥄', color: '#cbd5e1' },
+      { word: 'CHAIR', clue: 'You sit on it.', emoji: '🪑', color: '#fdba74' }
+    ];
+    let usedWordIndexes = [];
+    let state = { target: '', letters: [], guess: [], attempts: [], maxAttempts: 6, timeLeft: 90, timerId: null, gameOver: false, clue: null };
+
+    function pickWord(){
+      if (!usedWordIndexes.length){
+        usedWordIndexes = WORD_BANK.map((_, i) => i).sort(() => Math.random() - 0.5);
+      }
+      return WORD_BANK[usedWordIndexes.pop()];
+    }
+
+    function makeImageDataUri(label, emoji, color){
+      const svg = [
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-label="', label, '">',
+        '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">',
+        '<stop offset="0%" stop-color="', color, '"/><stop offset="100%" stop-color="#ffffff"/></linearGradient></defs>',
+        '<rect width="320" height="320" rx="32" fill="url(#g)"/>',
+        '<circle cx="160" cy="118" r="76" fill="#ffffff" fill-opacity="0.28"/>',
+        '<text x="160" y="190" text-anchor="middle" font-size="124">', emoji, '</text>',
+        '</svg>'
+      ].join('');
+      return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+    }
+
+    function initGame(){
+      const tray = document.getElementById('tray');
+      const board = document.getElementById('board');
+      tray.innerHTML=''; board.innerHTML='';
+      state.clue = pickWord();
+      state.target = state.clue.word;
+      state.letters = state.target.split('');
+      state.guess = []; state.attempts = []; state.gameOver=false;
+      document.getElementById('targetLen').textContent = state.target.length;
+      document.getElementById('clueImage').src = makeImageDataUri(state.clue.word, state.clue.emoji, state.clue.color);
+      document.getElementById('clueImage').alt = state.clue.word + ' clue';
+      buildTray(); buildBoard(); resetTimer(90);
+      updateControls();
+    }
+
+    function buildTray(){
+      const tray = document.getElementById('tray');
+      const shuffled = [...state.letters].sort(()=>Math.random()-0.5);
+      // counts for duplicates
+      const counts = {};
+      state.letters.forEach(l => counts[l] = (counts[l]||0) + 1);
+      tray.innerHTML='';
+      shuffled.forEach(l => {
+        const chip = document.createElement('div'); chip.className='letter'; chip.textContent=l; chip.dataset.letter=l;
+        tray.appendChild(chip);
+      });
+      enableLetterEvents(tray, counts);
+    }
+
+    function enableLetterEvents(tray, counts){
+      Array.from(tray.querySelectorAll('.letter')).forEach(el => {
+        el.addEventListener('click', () => addLetter(el.dataset.letter, el));
+      });
+      // Keyboard support
+      window.onkeydown = (e) => {
+        if(state.gameOver) return;
+        const k = e.key.toUpperCase();
+        if(k === 'BACKSPACE'){ removeLast(); return; }
+        if(k.length===1 && counts[k] && usedCount(k) < counts[k]){
+          const chip = Array.from(tray.querySelectorAll('.letter')).find(c => c.dataset.letter===k && !c.classList.contains('used'));
+          if(chip) addLetter(k, chip);
+        }
+      };
+    }
+
+    function usedCount(letter){ return state.guess.filter(l => l===letter).length; }
+
+    function addLetter(l, chip){
+      if(state.gameOver) return;
+      if(state.guess.length >= state.target.length) return;
+      state.guess.push(l);
+      chip && chip.classList.add('used');
+      renderCurrentRow(); updateControls();
+      playBeep(720, 0.06, 'triangle', 0.22);
+      if(state.guess.length === state.target.length){ submitGuess(); }
+    }
+
+    function removeLast(){
+      if(state.gameOver) return;
+      const l = state.guess.pop();
+      if(l){
+        const tray = document.getElementById('tray');
+        const chip = Array.from(tray.querySelectorAll('.letter')).find(c => c.dataset.letter===l && c.classList.contains('used'));
+        chip && chip.classList.remove('used');
+        renderCurrentRow(); updateControls();
+        playBeep(300, 0.06, 'square', 0.18);
+      }
+    }
+
+    function buildBoard(){
+      const board = document.getElementById('board');
+      // previous attempts container
+      const attempts = document.createElement('div'); attempts.id='attempts'; attempts.style.display='flex'; attempts.style.flexDirection='column'; attempts.style.gap='8px'; attempts.style.alignItems='center';
+      board.appendChild(attempts);
+      // current input row
+      const current = document.createElement('div'); current.id='current'; current.className='guess-row';
+      for(let i=0;i<state.target.length;i++){
+        const t = document.createElement('div'); t.className='tile'; t.textContent=''; current.appendChild(t);
+      }
+      board.appendChild(current);
+      // controls
+      const controls = document.createElement('div'); controls.className='controls';
+      controls.innerHTML = `
+        <button class="btn secondary" id="shuffleBtn">Shuffle</button>
+        <button class="btn secondary" id="backBtn">Backspace</button>
+        <button class="btn secondary" id="resetBtn">Reset</button>
+      `;
+      board.appendChild(controls);
+      document.getElementById('shuffleBtn').onclick = () => { buildTray(); renderCurrentRow(); playBeep(500,0.06,'sine',0.2); };
+      document.getElementById('backBtn').onclick = removeLast;
+      document.getElementById('resetBtn').onclick = () => { state.guess=[]; Array.from(document.querySelectorAll('.letter.used')).forEach(c=>c.classList.remove('used')); renderCurrentRow(); updateControls(); };
+    }
+
+    function renderCurrentRow(){
+      const row = document.getElementById('current'); if(!row) return;
+      const tiles = row.querySelectorAll('.tile');
+      tiles.forEach((t,i)=>{ t.textContent = state.guess[i] || ''; });
+    }
+
+    function evaluate(guess, target){
+      const g = guess.slice(); const t = target.split('');
+      const res = new Array(t.length).fill('gray');
+      const counts = {};
+      t.forEach((l,i)=>{ if(g[i]===l){ res[i]='green'; g[i]=null; t[i]=null; } });
+      t.forEach(l => { if(l) counts[l] = (counts[l]||0)+1; });
+      for(let i=0;i<g.length;i++){
+        const l = g[i]; if(!l) continue;
+        if(counts[l]){ res[i]='yellow'; counts[l]-=1; }
+      }
+      return res;
+    }
+
+    function submitGuess(){
+      if(state.gameOver) return;
+      if(state.guess.length !== state.target.length) return;
+      const result = evaluate(state.guess, state.target);
+      playBeep(560, 0.09, 'sine', 0.24);
+      commitAttempt(state.guess.slice(), result);
+      const win = result.every(r=>r==='green');
+      if(win){ endGame(true); return; }
+      if(state.attempts.length >= state.maxAttempts){ endGame(false); return; }
+      // reset current guess
+      state.guess=[]; Array.from(document.querySelectorAll('.letter.used')).forEach(c=>c.classList.remove('used'));
+      renderCurrentRow(); updateControls();
+    }
+
+    function commitAttempt(letters, marks){
+      state.attempts.push({letters, marks});
+      const attempts = document.getElementById('attempts');
+      const row = document.createElement('div'); row.className='guess-row';
+      letters.forEach((l,i)=>{
+        const t = document.createElement('div'); t.className='tile '+(marks[i]||'gray'); t.textContent=l; row.appendChild(t);
+      });
+      attempts.appendChild(row);
+    }
+
+    function updateControls(){ /* no-op now that submit is automatic */ }
+
+    function resetTimer(seconds){
+      state.timeLeft=seconds; const t=document.getElementById('time'); t.textContent=`${state.timeLeft}s`; t.style.color='#111';
+      if(state.timerId) clearInterval(state.timerId);
+      state.timerId=setInterval(()=>{
+        state.timeLeft-=1; t.textContent=`${state.timeLeft}s`; if(state.timeLeft<=10){ t.style.color='var(--warn)'; }
+        if(state.timeLeft<=0){ clearInterval(state.timerId); endGame(false); }
+      },1000);
+    }
+
+    function endGame(won){
+      if(state.gameOver) return; state.gameOver=true; if(state.timerId) clearInterval(state.timerId);
+      document.querySelectorAll('.letter').forEach(s=>s.style.pointerEvents='none');
+      const modal=document.getElementById('modal'); modal.classList.add('open');
+      document.getElementById('resultTitle').textContent = won ? 'You Got It! 🎉' : 'Nice Try!';
+      document.getElementById('resultDesc').textContent = won ? `Word: ${state.target}` : `Word was: ${state.target}`;
+      playBeep(won?820:240, 0.12, won?'sine':'sawtooth', won?0.28:0.2);
+      if(won && window.Celebration){ try{ window.Celebration.celebrate(); }catch(_){} }
+    }
+
+    function newRound(){ document.getElementById('modal').classList.remove('open'); initGame(); }
+
+    window.addEventListener('DOMContentLoaded', initGame);
+  </script>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a href="/index.html">← Home</a>
+      <div class="hud">
+        <div class="pill">Word Length: <span id="targetLen">0</span></div>
+        <div class="pill">Time: <span id="time">90s</span></div>
+        <button class="btn" onclick="newRound()">New Word</button>
+      </div>
+    </header>
+    <main>
+      <section class="panel">
+        <h2 class="title">Letters</h2>
+        <div class="clue-card">
+          <img id="clueImage" class="clue-image" alt="" />
+        </div>
+        <div id="tray" class="tray"></div>
+        <div style="text-align:center;color:var(--muted);margin-top:8px">Tap letters to build the word. Each round shows a new picture clue and a new random word.</div>
+      </section>
+      <section class="panel">
+        <h2 class="title">Your Guesses</h2>
+        <div id="board" class="board"></div>
+      </section>
+    </main>
+    <div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+  </div>
+  <div id="modal" class="modal" role="dialog" aria-modal="true">
+    <div class="dialog">
+      <h2 id="resultTitle">You Got It!</h2>
+      <p id="resultDesc">Word: CAT</p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+        <button class="btn" onclick="newRound()">Play Again</button>
+        <a class="btn secondary" href="/index.html">Home</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

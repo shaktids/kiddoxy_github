@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Simon</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    :root {
+      --bg-top: #ffd89b;
+      --bg-bottom: #19547b;
+      --surface: #ffffffea;
+      --ink: #1a1a2e;
+      --muted: #516285;
+      --accent: #ff6b6b;
+      --accent-2: #4ecdc4;
+      --shadow: 0 14px 28px rgba(26, 26, 46, 0.14);
+      --pad-size: 120px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: "Baloo 2", "Trebuchet MS", "Comic Sans MS", sans-serif;
+      color: var(--ink);
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 88% 14%, #ffffffcc 0 12%, transparent 13%),
+        radial-gradient(circle at 10% 85%, #fef3c7ba 0 14%, transparent 15%),
+        linear-gradient(135deg, #ffd89b, #ffa500, #ff6b6b, #4ecdc4, #19547b);
+    }
+
+    .wrap {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .shell {
+      width: min(980px, 96vw);
+      margin: 12px auto;
+      padding: 12px;
+      border-radius: 22px;
+      background: var(--surface);
+      border: 2px solid #ffffffcc;
+      box-shadow: var(--shadow);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .title-icon {
+      font-size: 2em;
+      flex-shrink: 0;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: 1.4em;
+      font-weight: 800;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .btn {
+      background: linear-gradient(180deg, var(--accent), #dc2626);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.12s, box-shadow 0.12s;
+      box-shadow: 0 6px 12px rgba(255, 107, 107, 0.24);
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn.secondary {
+      background: #f0f0f0;
+      color: var(--ink);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .helper {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95em;
+      margin: 8px 0 12px;
+      font-weight: 600;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+
+    .board {
+      width: 100%;
+      max-width: 360px;
+      aspect-ratio: 1 / 1;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .pad {
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      touch-action: manipulation;
+      user-select: none;
+      cursor: pointer;
+      border: 3px solid rgba(255, 255, 255, 0.4);
+      transition: filter 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+      box-shadow: 0 8px 20px rgba(26, 26, 46, 0.15);
+    }
+
+    .pad.red {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    }
+
+    .pad.green {
+      background: linear-gradient(135deg, #51cf66, #37b24d);
+    }
+
+    .pad.blue {
+      background: linear-gradient(135deg, #4ecdc4, #2fa89f);
+    }
+
+    .pad.yellow {
+      background: linear-gradient(135deg, #ffd93d, #f0ad4e);
+    }
+
+    .pad.dim {
+      filter: brightness(0.7);
+    }
+
+    .pad.active {
+      transform: scale(1.08);
+      filter: brightness(1.2);
+      box-shadow: 0 12px 28px rgba(26, 26, 46, 0.25);
+    }
+
+    .status {
+      padding: 12px;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.95em;
+      min-height: 20px;
+    }
+
+    .result-modal,
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+      padding: 14px;
+    }
+
+    .result-modal.open,
+    .overlay.open {
+      display: flex;
+    }
+
+    .result-dialog {
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 20px;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .result-dialog h2 {
+      margin: 0 0 10px;
+      color: var(--ink);
+      font-size: 1.4em;
+    }
+
+    .result-dialog p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .howto-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 1001;
+      background: linear-gradient(180deg, var(--accent), #dc2626);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      box-shadow: 0 6px 18px rgba(255, 107, 107, 0.3);
+      font-size: 28px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+
+    .howto-btn:active {
+      transform: scale(0.92);
+    }
+
+    .howto-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1202;
+      padding: 14px;
+    }
+
+    .howto-modal.open {
+      display: flex;
+    }
+
+    .howto-dialog {
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 20px;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .howto-dialog h2 {
+      margin: 0 0 12px;
+      color: var(--ink);
+    }
+
+    .howto-dialog p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .ad-banner {
+      height: 60px;
+      background: rgba(255, 255, 255, 0.5);
+      border-top: 1px solid rgba(255, 255, 255, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85em;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+
+    @media (max-width: 700px) {
+      :root { --pad-size: 100px; }
+      .board {
+        max-width: 320px;
+        gap: 10px;
+      }
+      .btn {
+        padding: 8px 12px;
+        font-size: 0.9em;
+      }
+      .pad {
+        border-radius: 14px;
+        border-width: 2px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      :root { --pad-size: 80px; }
+      main {
+        padding: 8px;
+      }
+      .shell {
+        width: min(100%, 96vw);
+        margin: 8px auto;
+        border-radius: 14px;
+        padding: 10px;
+      }
+      header {
+        margin-bottom: 10px;
+      }
+      .title-wrap h1 {
+        font-size: 1.2em;
+      }
+      .title-icon {
+        font-size: 1.6em;
+      }
+      .controls {
+        gap: 6px;
+        width: 100%;
+      }
+      .btn {
+        padding: 7px 10px;
+        font-size: 0.85em;
+        flex: 1;
+        min-width: 70px;
+      }
+      .helper {
+        font-size: 0.85em;
+        margin: 6px 0 10px;
+      }
+      .board {
+        max-width: 280px;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .pad {
+        border-radius: 12px;
+        border-width: 2px;
+        font-size: 18px;
+      }
+      .status {
+        padding: 8px;
+        font-size: 0.85em;
+      }
+      .howto-btn {
+        width: 48px;
+        height: 48px;
+        right: 10px;
+        bottom: 10px;
+        font-size: 24px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      :root { --pad-size: 68px; }
+      .title-wrap h1 {
+        font-size: 1.1em;
+      }
+      .title-icon {
+        font-size: 1.4em;
+      }
+      .controls {
+        flex-direction: column;
+      }
+      .btn {
+        width: 100%;
+        text-align: center;
+      }
+      .board {
+        max-width: 240px;
+        gap: 6px;
+      }
+      .pad {
+        border-radius: 10px;
+        border-width: 2px;
+      }
+    }
+  </style>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="shell">
+      <header>
+        <div class="title-wrap">
+          <span class="title-icon">🎮</span>
+          <h1>Simon Says</h1>
+        </div>
+        <div class="controls">
+          <button id="startBtn" class="btn">Start</button>
+          <button id="strictBtn" class="btn secondary">Strict</button>
+        </div>
+      </header>
+
+      <p class="helper">Watch the color sequence and repeat it! Get as far as you can.</p>
+
+      <main>
+        <div class="board" id="board" aria-live="polite">
+          <div class="pad red dim" data-color="red" id="pad-red"></div>
+          <div class="pad green dim" data-color="green" id="pad-green"></div>
+          <div class="pad blue dim" data-color="blue" id="pad-blue"></div>
+          <div class="pad yellow dim" data-color="yellow" id="pad-yellow"></div>
+        </div>
+        <div class="status" id="status">Press Start to play</div>
+      </main>
+
+      <div class="ad-banner" aria-hidden="true">AD_BANNER_PLACEHOLDER</div>
+    </div>
+  </div>
+
+  <div id="cele" class="result-modal">
+    <div class="result-dialog">
+      <h2 id="resultTitle">Perfect! 🎉</h2>
+      <p id="resultDesc">You completed 20 rounds!</p>
+      <button id="celebrateNext" class="btn" style="margin-top:12px;">Play Again</button>
+    </div>
+  </div>
+
+  <button class="howto-btn" id="howtoBtn" title="How to Play" aria-label="How to Play">?</button>
+  <div id="howtoModal" class="howto-modal">
+    <div class="howto-dialog">
+      <h2>How to Play</h2>
+      <p>Watch the colored pads light up in a sequence. Tap them in the same order! Each round adds one more color to remember. Try to get as far as you can!</p>
+      <button id="howtoClose" class="btn" style="margin-top:12px;">Got It!</button>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const pads = { red: document.getElementById('pad-red'), green: document.getElementById('pad-green'), blue: document.getElementById('pad-blue'), yellow: document.getElementById('pad-yellow') };
+  const startBtn = document.getElementById('startBtn');
+  const strictBtn = document.getElementById('strictBtn');
+  const status = document.getElementById('status');
+  const cele = document.getElementById('cele');
+  const howtoBtn = document.getElementById('howtoBtn');
+  const howtoModal = document.getElementById('howtoModal');
+  const howtoClose = document.getElementById('howtoClose');
+  const celebrateNext = document.getElementById('celebrateNext');
+
+  const colors = ['red','green','blue','yellow'];
+  let sequence = [];
+  let playerIndex = 0;
+  let playingSequence = false;
+  let strict = false;
+  let round = 0;
+
+  // WebAudio tones per color
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  const ctx = AudioContext ? new AudioContext() : null;
+  function tone(freq,d=0.25){ if(!ctx) return; const o=ctx.createOscillator(), g=ctx.createGain(); o.type='sine'; o.frequency.value=freq; g.gain.value=0.09; o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + d); }
+  const tones = { red:440, green:660, blue:520, yellow:320 };
+
+  function flash(color,ms=400){ const el = pads[color]; if(!el) return; el.classList.add('active'); el.classList.remove('dim'); if(ctx) tone(tones[color],ms/1000); setTimeout(()=>{ el.classList.remove('active'); el.classList.add('dim'); }, ms); }
+
+  function sleep(ms){ return new Promise(res=>setTimeout(res,ms)); }
+
+  async function playSequence(){ playingSequence = true; status.textContent = 'Watch the sequence...'; for(let i=0;i<sequence.length;i++){ await sleep(300); flash(sequence[i],400); await sleep(420); } playingSequence = false; status.textContent = 'Your turn!'; playerIndex = 0; }
+
+  function addStep(){ sequence.push(colors[Math.floor(Math.random()*colors.length)]); round = sequence.length; }
+
+  function startGame(){ sequence = []; playerIndex = 0; round = 0; cele.classList.remove('open'); nextRound(); }
+
+  async function nextRound(){ addStep(); status.textContent = 'Round ' + round; await sleep(350); playSequence(); }
+
+  function endGame(win){ if(win){ finalCelebration(); } else { status.textContent = 'Wrong! ❌'; if(strict){ setTimeout(()=>{ status.textContent = 'Game Over! Try again.'; setTimeout(()=>{ startGame(); }, 1200); }, 800); } else { setTimeout(()=>{ status.textContent = 'Watch the sequence...'; playSequence(); }, 1200); } } }
+
+  function finalCelebration(){ status.textContent = 'You Won!'; document.getElementById('resultTitle').textContent = 'Perfect! 🎉'; document.getElementById('resultDesc').textContent = 'You completed ' + round + ' rounds!'; cele.classList.add('open'); }
+
+  function handlePlayer(color){ if(playingSequence) return; if(sequence.length===0) return; flash(color,250); if(color === sequence[playerIndex]){ playerIndex++; if(playerIndex >= sequence.length){ if(sequence.length>=20){ endGame(true); return; } setTimeout(()=>{ nextRound(); },800); } } else { endGame(false); } }
+
+  // wire pads
+  Object.keys(pads).forEach(c => {
+    const el = pads[c];
+    el.addEventListener('pointerdown', (e)=>{ e.preventDefault(); if(ctx && ctx.state==='suspended') ctx.resume(); handlePlayer(c); }, {passive:false});
+  });
+
+  startBtn.addEventListener('click', ()=>{ if(ctx && ctx.state==='suspended') ctx.resume(); startGame(); });
+  strictBtn.addEventListener('click', ()=>{ strict = !strict; strictBtn.textContent = strict ? 'Strict ✓' : 'Strict'; });
+  celebrateNext.addEventListener('click', ()=>{ cele.classList.remove('open'); startGame(); });
+  howtoBtn.addEventListener('click', ()=>{ howtoModal.classList.add('open'); });
+  howtoClose.addEventListener('click', ()=>{ howtoModal.classList.remove('open'); });
+
+  window.__simon = { start: startGame, sequence: sequence };
+})();
+</script>
+<!-- How to Play Button and Modal -->
+<button class="howto-btn" id="howtoBtn" title="How to Play" aria-label="How to Play">?</button>
+<div id="howtoModal" class="howto-modal">
+  <div class="howto-dialog">
+    <h2>How to Play</h2>
+    <p>Watch the colored pads light up in a sequence. Tap them in the same order! Each round adds one more color to remember. Try to get as far as you can!</p>
+    <button id="howtoClose" class="btn" style="margin-top:12px;">Got It!</button>
+  </div>
+</div>
+<div id="ageModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Age verification">
+    <div class="modal-content">
+      <h2>Are you a parent?</h2>
+      <p>Please enter your birth year to continue to parental settings.</p>
+      <input id="birthYear" type="number" placeholder="e.g. 1980" min="1900" max="2025" />
+      <div class="modal-actions">
+        <button id="ageSubmit">Confirm</button>
+        <button id="ageCancel" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <script type="module">
+    import { injectNavbar } from '/scripts/navbar-footer.js';
+    injectNavbar();
+    // Wire up parental modal logic after navbar injection
+    window.addEventListener('DOMContentLoaded', () => {
+      var parentBtn = document.getElementById('parent-btn');
+      if (parentBtn) {
+        parentBtn.addEventListener('click', function(){
+          if (typeof showParentalGate === 'function') showParentalGate();
+        });
+      }
+      var ageSubmit = document.getElementById('ageSubmit');
+      if (ageSubmit) {
+        ageSubmit.addEventListener('click', function(){
+          const year = parseInt(document.getElementById('birthYear').value || '0', 10);
+          if (isNaN(year)) return;
+          if (typeof handleParentalConfirm === 'function') handleParentalConfirm(year);
+        });
+      }
+      var ageCancel = document.getElementById('ageCancel');
+      if (ageCancel) {
+        ageCancel.addEventListener('click', function(){
+          if (typeof closeParentalModal === 'function') closeParentalModal();
+        });
+      }
+    });
+  </script>
+  <script src="/game-shell.js"></script>
+
+</body>
+</html>

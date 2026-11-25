@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="360" viewBox="0 0 540 360">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fde68a"/>
+      <stop offset="1" stop-color="#fca5a5"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="540" height="360" fill="url(#bg)"/>
+  <rect x="0" y="250" width="540" height="110" fill="#fecdd3" opacity="0.6"/>
+  <!-- lion -->
+  <g transform="translate(140,120) scale(1.2)">
+    <!-- mane -->
+    <circle cx="110" cy="70" r="48" fill="#ea580c"/>
+    <!-- face -->
+    <circle cx="110" cy="70" r="30" fill="#f59e0b"/>
+    <circle cx="100" cy="65" r="4" fill="#111"/>
+    <circle cx="120" cy="65" r="4" fill="#111"/>
+    <path d="M95,78 Q110,86 125,78" stroke="#111" stroke-width="3" fill="none"/>
+    <!-- body -->
+    <ellipse cx="150" cy="110" rx="80" ry="40" fill="#f59e0b"/>
+    <!-- legs -->
+    <rect x="120" y="130" width="14" height="24" rx="6" fill="#f59e0b"/>
+    <rect x="160" y="130" width="14" height="24" rx="6" fill="#f59e0b"/>
+    <!-- tail -->
+    <path d="M220,110 C240,120 240,140 220,145" stroke="#f59e0b" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <circle cx="220" cy="145" r="6" fill="#ea580c"/>
+  </g>
+</svg>

@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Money Count</title>
+  <style>
+    :root{
+      --bg: #fbfbff;
+      --surface: #ffffff;
+      --accent: #22c55e;
+      --warn: #dc2626;
+      --muted: #6b7280;
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
+    }
+    html,body{height:100%;margin:0;font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;background:var(--bg);color:#111}
+    .wrap{min-height:100%;display:flex;flex-direction:column}
+    header{padding:12px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+    header a{color:var(--accent);text-decoration:none;font-weight:700}
+    .hud{display:flex;gap:12px;align-items:center}
+    .pill{background:#dcfce7;color:#1f2937;border-radius:999px;padding:8px 12px;font-weight:700;min-width:110px;text-align:center}
+    .pill.warn{background:#fee2e2}
+    .btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+    .btn.secondary{background:#e5e7eb;color:#111}
+
+    main{flex:1;display:grid;grid-template-columns:320px 1fr;gap:16px;padding:12px}
+    @media (max-width:900px){ main{grid-template-columns:1fr;grid-auto-rows:minmax(280px,auto)} }
+    .panel{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:14px}
+    .title{margin:0 0 6px;font-size:20px}
+
+    .tray{display:flex;flex-wrap:wrap;gap:12px;align-content:flex-start;justify-content:center;min-height:240px}
+    .chip{width:96px;height:64px;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none;cursor:grab;border-radius:12px;background:#f8fafc;box-shadow:0 4px 12px rgba(34,197,94,.18)}
+    .chip.dragging{opacity:.95;transform:scale(1.06);cursor:grabbing}
+
+    .board{position:relative;min-height:420px;display:grid;grid-template-columns:1fr;grid-auto-rows:minmax(120px,auto);gap:14px}
+    .wallet{position:relative;border:2px dashed #cbd5e1;border-radius:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;justify-content:flex-start;background:#f9fafb;padding:12px;min-height:200px}
+    .wallet.over{border-color:#86efac;background:#f0fdf4}
+    .wallet .chip{cursor:pointer}
+
+    .legend{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .row{display:flex;gap:10px;align-items:center}
+    .row div{color:var(--muted);font-size:12px}
+
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:16px}
+    .modal.open{display:flex}
+    .dialog{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:18px;max-width:420px;text-align:center}
+    .dialog h2{margin:0 0 10px}
+    .dialog p{color:var(--muted)}
+    .ad-banner{height:60px;background:#fff;border-top:1px solid #eee;display:flex;align-items:center;justify-content:center}
+  </style>
+  <link rel="icon" href="/kiddoxy.png" type="image/png">
+  <link rel="manifest" href="/manifest.json">
+  <script defer src="/game-shell.js"></script>
+  <script>
+    // --- Audio helpers ---
+    let _audioCtx = null;
+    function getAudioCtx(){
+      if(!_audioCtx || _audioCtx.state === 'closed'){
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if(!AC) return null;
+        _audioCtx = new AC();
+      }
+      return _audioCtx;
+    }
+    function playBeep(freq=660, duration=0.08, type='sine', volume=0.25){
+      const ac = getAudioCtx(); if(!ac) return;
+      if(ac.state === 'suspended'){ try{ ac.resume(); }catch(_){} }
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = type; osc.frequency.value = freq;
+      const now = ac.currentTime;
+      gain.gain.setValueAtTime(volume, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(now);
+      osc.stop(now + duration);
+    }
+
+    const DENOMS = [1,2,5,10,20,50,100];
+    const CURRENCY = '₹';
+    let state = { target: 0, sum: 0, timeLeft: 60, timerId: null, gameOver: false };
+
+    function coinSVG(value){
+      if(value <= 10){
+        return `<svg width="86" height="86" viewBox="0 0 86 86" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="g${value}" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#fde68a"/>
+              <stop offset="100%" stop-color="#f59e0b"/>
+            </radialGradient>
+          </defs>
+          <circle cx="43" cy="43" r="36" fill="url(#g${value})" stroke="#b45309" stroke-width="3"/>
+          <text x="43" y="50" font-size="28" text-anchor="middle" fill="#111" font-weight="800">${value}</text>
+        </svg>`;
+      } else {
+        return `<svg width="100" height="64" viewBox="0 0 100 64" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="6" width="88" height="52" rx="8" fill="#bbf7d0" stroke="#16a34a" stroke-width="3"/>
+          <text x="50" y="40" font-size="26" text-anchor="middle" fill="#065f46" font-weight="800">${value}</text>
+        </svg>`;
+      }
+    }
+
+    function newTarget(){
+      // Any integer is solvable due to 1-unit coin; pick 20..200
+      const min=20, max=200; return Math.floor(Math.random()*(max-min+1))+min;
+    }
+
+    function initGame(){
+      const tray = document.getElementById('tray');
+      const wallet = document.getElementById('wallet');
+      tray.innerHTML=''; wallet.innerHTML='';
+      state.target = newTarget(); state.sum=0; state.gameOver=false; updateHud();
+      DENOMS.forEach(v=>{
+        const el=document.createElement('div'); el.className='chip'; el.dataset.value=v; el.innerHTML=coinSVG(v);
+        tray.appendChild(el);
+      });
+      enableInteractions(); resetTimer(60);
+    }
+
+    function formatMoney(n){ return CURRENCY + n.toString(); }
+
+    function updateHud(){
+      document.getElementById('target').textContent = formatMoney(state.target);
+      const totalEl=document.getElementById('total'); totalEl.textContent = formatMoney(state.sum);
+      totalEl.parentElement.classList.toggle('warn', state.sum>state.target);
+    }
+
+    function resetWallet(){
+      const wallet = document.getElementById('wallet');
+      wallet.innerHTML=''; state.sum=0; updateHud();
+    }
+
+    function recalcSum(){
+      const wallet = document.getElementById('wallet');
+      let s=0; wallet.querySelectorAll('.chip').forEach(c=> s += Number(c.dataset.value||0));
+      state.sum=s; updateHud();
+      if(state.sum===state.target){ endGame(true); }
+    }
+
+    function resetTimer(seconds){
+      state.timeLeft=seconds; const t=document.getElementById('time'); t.textContent=`${state.timeLeft}s`; t.style.color='#111';
+      if(state.timerId) clearInterval(state.timerId);
+      state.timerId=setInterval(()=>{
+        state.timeLeft-=1; t.textContent=`${state.timeLeft}s`; if(state.timeLeft<=10){ t.style.color='var(--warn)'; }
+        if(state.timeLeft<=0){ clearInterval(state.timerId); endGame(false); }
+      },1000);
+    }
+
+    function endGame(won){
+      if(state.gameOver) return; state.gameOver=true; if(state.timerId) clearInterval(state.timerId);
+      document.querySelectorAll('.chip').forEach(s=>s.style.pointerEvents='none');
+      const modal=document.getElementById('modal'); modal.classList.add('open');
+      document.getElementById('resultTitle').textContent = won ? 'Exact Match! 🎉' : 'Time’s Up! ⏲️';
+      document.getElementById('resultDesc').textContent = won ? `You matched ${formatMoney(state.target)} exactly.` : `Try again to reach ${formatMoney(state.target)}.`;
+      playBeep(won?820:240, 0.12, won?'sine':'sawtooth', won?0.28:0.2);
+      if(won && window.Celebration){ try{ window.Celebration.celebrate(); }catch(_){} }
+    }
+
+    function enableInteractions(){
+      const tray = document.getElementById('tray');
+      const wallet = document.getElementById('wallet');
+
+      // Drag from tray creates a clone into wallet
+      Array.from(tray.querySelectorAll('.chip')).forEach(el=>{
+        let startX=0,startY=0,dragging=false,ghost=null;
+        el.addEventListener('pointerdown',(e)=>{
+          if(state.gameOver) return; el.setPointerCapture(e.pointerId); dragging=true;
+          const r=el.getBoundingClientRect(); startX=e.clientX - r.left; startY=e.clientY - r.top;
+          ghost = el.cloneNode(true); ghost.classList.add('dragging'); ghost.style.position='fixed'; ghost.style.left=`${r.left}px`; ghost.style.top=`${r.top}px`; ghost.style.zIndex=1000; document.body.appendChild(ghost);
+          playBeep(720, 0.08, 'triangle', 0.22);
+        });
+        el.addEventListener('pointermove',(e)=>{
+          if(!dragging || !ghost) return; ghost.style.left=`${e.clientX - startX}px`; ghost.style.top=`${e.clientY - startY}px`;
+          const wr=wallet.getBoundingClientRect();
+          const over = e.clientX>=wr.left && e.clientX<=wr.right && e.clientY>=wr.top && e.clientY<=wr.bottom;
+          wallet.classList.toggle('over', over);
+        });
+        el.addEventListener('pointerup',(e)=>{
+          if(!dragging) return; dragging=false; wallet.classList.remove('over');
+          try{ el.releasePointerCapture && el.releasePointerCapture(e.pointerId); }catch(_){}
+          if(ghost){
+            const wr=wallet.getBoundingClientRect(); const gx=e.clientX - startX; const gy=e.clientY - startY;
+            const drop = e.clientX>=wr.left && e.clientX<=wr.right && e.clientY>=wr.top && e.clientY<=wr.bottom;
+            ghost.remove(); ghost=null;
+            if(drop){
+              const chip = el.cloneNode(true); chip.classList.remove('dragging'); chip.style.position=''; chip.style.left=''; chip.style.top=''; chip.style.zIndex='';
+              // wallet chip: tap to remove
+              chip.addEventListener('click',()=>{ chip.remove(); recalcSum(); playBeep(300,0.06,'square',0.18); });
+              wallet.appendChild(chip);
+              playBeep(560, 0.09, 'sine', 0.24);
+              recalcSum();
+              if(state.sum>state.target){ playBeep(260,0.07,'sawtooth',0.18); }
+            }
+          }
+        });
+        // Tap to add (mobile-friendly)
+        el.addEventListener('click',()=>{
+          if(state.gameOver) return;
+          const chip = el.cloneNode(true); chip.addEventListener('click',()=>{ chip.remove(); recalcSum(); playBeep(300,0.06,'square',0.18); }); wallet.appendChild(chip);
+          playBeep(560, 0.09, 'sine', 0.24); recalcSum(); if(state.sum>state.target){ playBeep(260,0.07,'sawtooth',0.18); }
+        });
+      });
+    }
+
+    function newRound(){ document.getElementById('modal').classList.remove('open'); initGame(); }
+
+    window.addEventListener('DOMContentLoaded', initGame);
+  </script>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a href="/index.html">← Home</a>
+      <div class="hud">
+        <div class="pill">Target: <span id="target">₹0</span></div>
+        <div class="pill">Total: <span id="total">₹0</span></div>
+        <div class="pill">Time: <span id="time">60s</span></div>
+        <button class="btn secondary" onclick="resetWallet()">Reset Wallet</button>
+        <button class="btn" onclick="newRound()">New Round</button>
+      </div>
+    </header>
+    <main>
+      <section class="panel">
+        <h2 class="title">Coins & Notes</h2>
+        <div id="tray" class="tray"></div>
+        <div class="legend" style="margin-top:10px">
+          <div class="row"><div>Tap a chip to add.</div><div>Tap in wallet to remove.</div></div>
+          <div class="row"><div>Drag chips into wallet for precision.</div><div>Match exactly to win.</div></div>
+        </div>
+      </section>
+      <section class="panel">
+        <h2 class="title">Wallet</h2>
+        <div id="wallet" class="wallet"></div>
+      </section>
+    </main>
+    <div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+  </div>
+  <div id="modal" class="modal" role="dialog" aria-modal="true">
+    <div class="dialog">
+      <h2 id="resultTitle">Exact Match!</h2>
+      <p id="resultDesc">You matched ₹0 exactly.</p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+        <button class="btn" onclick="newRound()">Play Again</button>
+        <a class="btn secondary" href="/index.html">Home</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

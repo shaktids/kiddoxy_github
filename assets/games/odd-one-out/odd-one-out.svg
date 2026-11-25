@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#60a5fa"/>
+      <stop offset="1" stop-color="#34d399"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="224" height="224" rx="24" fill="url(#g)"/>
+  <g fill="#ffffff" font-family="System, -apple-system, Segoe UI, Roboto, Arial" font-weight="900">
+    <text x="128" y="88" font-size="40" text-anchor="middle">ODD</text>
+  </g>
+  <g>
+    <!-- grid of shapes: one different color to hint 'odd one out' -->
+    <circle cx="64" cy="136" r="18" fill="#fff" opacity="0.9"/>
+    <circle cx="128" cy="136" r="18" fill="#fff" opacity="0.9"/>
+    <circle cx="192" cy="136" r="18" fill="#111" opacity="0.9"/>
+    <rect x="48" y="172" width="32" height="32" rx="6" fill="#fff" opacity="0.9"/>
+    <rect x="112" y="172" width="32" height="32" rx="6" fill="#fff" opacity="0.9"/>
+    <rect x="176" y="172" width="32" height="32" rx="6" fill="#fff" opacity="0.9"/>
+  </g>
+</svg>

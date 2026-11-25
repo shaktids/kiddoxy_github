@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Whack-a-Fruit</title>
+  <style>
+    :root{--bg:#fff6f3;--panel:#ffffff;--accent:#ff6b6b;--muted:#6b7280}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;background:var(--bg);color:#111}
+    .wrap{min-height:100vh;display:flex;flex-direction:column}
+    header{padding:12px 14px;display:flex;align-items:center;justify-content:space-between}
+    h1{font-size:18px;margin:0}
+    .controls{display:flex;gap:8px;align-items:center}
+    .btn{background:#fff;border:1px solid #e6e6e6;padding:8px 10px;border-radius:8px;font-weight:600}
+    .stats{display:flex;gap:12px;align-items:center;font-size:14px;color:var(--muted)}
+    main.play-area{flex:1;display:flex;align-items:center;justify-content:center;padding:12px}
+    .board{width:100%;max-width:920px;height:calc(100vh - 220px);max-height:720px;background:linear-gradient(180deg,#fff 0%,#fff8f6 100%);border-radius:14px;box-shadow:0 8px 30px rgba(2,6,23,0.06);display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;gap:12px;padding:14px;box-sizing:border-box}
+    .hole{background:linear-gradient(180deg,#f8fafc,#fff);border-radius:12px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:manipulation}
+    .fruit{position:absolute;transform:translateY(20%);transition:transform 180ms ease, opacity 120ms;will-change:transform,opacity;user-select:none}
+    .fruit.show{transform:translateY(0%);opacity:1}
+    .fruit.pop{transform:scale(0.7);opacity:0;transition:transform 240ms ease,opacity 200ms}
+    .scoreboard{padding:10px 14px;background:transparent;text-align:center}
+    .cele{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:200}
+    .cele.show{display:flex}
+    .cele .card{background:rgba(255,255,255,0.98);padding:18px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.12);text-align:center}
+    .ad-banner{height:64px;background:#fff;border-top:1px solid #eee;display:flex;align-items:center;justify-content:center}
+    @media(max-width:520px){ .board{grid-template-columns:repeat(3,1fr);gap:10px;padding:10px;height:calc(100vh - 220px)} }
+  </style>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Whack-a-Fruit</h1>
+      <div class="controls">
+        <div class="stats"><strong id="score">0</strong>&nbsp;pts</div>
+        <div class="stats">Time: <strong id="time">30</strong>s</div>
+        <button id="startBtn" class="btn">Start</button>
+        <a href="/index.html" class="btn">Home</a>
+      </div>
+    </header>
+
+    <main class="play-area">
+      <div class="board" id="board" aria-live="polite"></div>
+    </main>
+
+    <div class="scoreboard">
+      <div id="message" style="color:var(--muted)">Tap fruits as they appear — fast taps score more!</div>
+    </div>
+
+    <div class="ad-banner" aria-hidden="true">AD_BANNER_PLACEHOLDER</div>
+
+    <div id="cele" class="cele"><div class="card"><h2>Great Job! 🎉</h2><p id="finalText">You earned <span id="finalScore">0</span> points</p></div></div>
+  </div>
+
+  <script>
+    // Whack-a-fruit simple implementation
+    (function(){
+      const board = document.getElementById('board');
+      const startBtn = document.getElementById('startBtn');
+      const scoreEl = document.getElementById('score');
+      const timeEl = document.getElementById('time');
+      const message = document.getElementById('message');
+      const cele = document.getElementById('cele');
+      const finalScoreEl = document.getElementById('finalScore');
+
+      const rows = 3; const cols = 4; // 12 holes (mobile friendly)
+      const holes = [];
+      let score = 0; let timeLeft = 30; let running = false;
+      let spawnTimer = null; let gameTimer = null;
+
+      // tiny audio helper
+      const ctx = (window.AudioContext||window.webkitAudioContext) ? new (window.AudioContext||window.webkitAudioContext)() : null;
+      function popSound(){ if(!ctx) return; const o=ctx.createOscillator(), g=ctx.createGain(); o.type='triangle'; o.frequency.value=880; g.gain.value=0.04; o.connect(g); g.connect(ctx.destination); o.start(); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12); o.stop(ctx.currentTime + 0.13); }
+      function missSound(){ if(!ctx) return; const o=ctx.createOscillator(), g=ctx.createGain(); o.type='square'; o.frequency.value=220; g.gain.value=0.04; o.connect(g); g.connect(ctx.destination); o.start(); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.08); o.stop(ctx.currentTime + 0.09); }
+
+      // create holes
+      function makeBoard(){ board.innerHTML=''; holes.length=0; for(let i=0;i<rows*cols;i++){ const h=document.createElement('div'); h.className='hole'; h.dataset.index = i; board.appendChild(h); holes.push(h); } }
+
+      const fruitIcons = ['🍎','🍌','🍇','🍊','🍓','🍒','🍍','🥝'];
+
+      function spawn(){ if(!running) return; // choose a hole that isn't occupied
+        const available = holes.filter(h => !h.querySelector('.fruit'));
+        if (!available.length) return;
+        const hole = available[Math.floor(Math.random()*available.length)];
+        const f = document.createElement('div'); f.className='fruit'; f.innerHTML = fruitIcons[Math.floor(Math.random()*fruitIcons.length)];
+        // random size
+        const size = 48 + Math.floor(Math.random()*36); f.style.fontSize = size+'px'; f.style.opacity=0; f.style.left='50%'; f.style.top='50%'; f.style.transform='translate(-50%,20%)';
+        hole.appendChild(f);
+        // show
+        requestAnimationFrame(()=>{ f.classList.add('show'); f.style.opacity=1; });
+
+        // lifespan
+        const life = 700 + Math.floor(Math.random()*1200);
+        const disappear = setTimeout(()=>{ if(f && f.parentNode){ // remove
+            if(!f.classList.contains('pop')) { // missed
+                missSound();
+            }
+            f.remove();
+          } }, life);
+
+        // tap handler
+        const tapped = (ev)=>{
+          ev.stopPropagation(); ev.preventDefault();
+          if (!running) return;
+          if (f.classList.contains('pop')) return;
+          f.classList.add('pop');
+          // scoring: faster taps while visible yield more points -> simple random/size-based
+          const pts = 10 + Math.floor(Math.random()*10);
+          score += pts; scoreEl.textContent = score;
+          popSound();
+          // small pop animation then remove
+          setTimeout(()=>{ try{ f.remove(); }catch(e){} }, 220);
+        };
+        f.addEventListener('click', tapped, {passive:false});
+        f.addEventListener('touchstart', tapped, {passive:false});
+      }
+
+      function startGame(){ if (running) return; running=true; score=0; timeLeft=30; scoreEl.textContent=score; timeEl.textContent=timeLeft; message.textContent='Tap fruits as they appear — fast taps score more!'; cele.classList.remove('show');
+        // spawn interval
+        spawnTimer = setInterval(spawn, 650);
+        // initial fast spawns
+        for(let i=0;i<3;i++){ setTimeout(spawn, i*200); }
+        // game timer
+        gameTimer = setInterval(()=>{
+          timeLeft--; timeEl.textContent = timeLeft;
+          if (timeLeft<=0){ endGame(); }
+        },1000);
+      }
+
+      function endGame(){ running=false; clearInterval(spawnTimer); clearInterval(gameTimer); spawnTimer=null; gameTimer=null; // clear remaining fruits
+        holes.forEach(h=>{ const f = h.querySelector('.fruit'); if(f) f.remove(); });
+        // show celebration
+        finalScoreEl.textContent = score;
+        cele.classList.add('show');
+        // small confetti (DOM elements)
+        for(let i=0;i<30;i++){ const c=document.createElement('div'); c.style.position='fixed'; c.style.left=(10+Math.random()*80)+'%'; c.style.top=(10+Math.random()*60)+'%'; c.style.width='10px'; c.style.height='14px'; c.style.background = ['#ff5c8a','#ffd166','#8bd3ff','#7bf1a8'][i%4]; c.style.opacity=0.95; c.style.zIndex=250; c.style.borderRadius='2px'; c.style.transform='translateY(0) rotate('+Math.floor(Math.random()*360)+'deg)'; c.style.transition='transform 1600ms ease, top 1600ms linear, opacity 1600ms'; document.body.appendChild(c); setTimeout(()=>{ c.style.top = (80+Math.random()*20)+'%'; c.style.transform = 'translateY(200px) rotate('+Math.floor(Math.random()*720)+'deg)'; c.style.opacity=0; }, 50); setTimeout(()=>c.remove(),1700); }
+      }
+
+      // setup
+      makeBoard();
+      startBtn.addEventListener('click', ()=>{ if (!running) startGame(); else { endGame(); makeBoard(); } });
+
+      // keyboard/tap to start quickly
+      document.addEventListener('keydown', (e)=>{ if(e.key===' '){ e.preventDefault(); startGame(); } });
+
+      // expose for debugging
+      window.__whack = { start: startGame, stop: endGame };
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8"/>
+	<meta name="viewport" content="width=device-width,initial-scale=1"/>
+	<title>Maze Escape</title>
+	<style>
+		:root{ --bg:#fff8f6; --surface:#ffffff; --accent:#f97316; --muted:#6b7280; --warn:#dc2626; --ok:#22c55e; --shadow:0 10px 30px rgba(0,0,0,.08); }
+		html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+		body{background:var(--bg);color:#111}
+		.wrap{min-height:100%;display:flex;flex-direction:column}
+		header{padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+		header a{color:#2563eb;text-decoration:none;font-weight:800}
+		.hud{display:flex;gap:12px;align-items:center}
+		.pill{background:#fff;box-shadow:var(--shadow);border-radius:999px;padding:8px 12px;font-weight:800}
+		.btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+		.btn.secondary{background:#e5e7eb;color:#111}
+
+		main{flex:1;display:grid;grid-template-columns:300px 1fr;gap:16px;padding:12px}
+		@media (max-width:900px){ main{grid-template-columns:1fr;grid-auto-rows:minmax(260px,auto)} }
+		.panel{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:14px}
+		.title{margin:0 0 6px;font-size:20px}
+		.legend{margin-top:8px;color:var(--muted)}
+
+		.board{position:relative;display:flex;align-items:center;justify-content:center}
+		canvas{border-radius:14px;box-shadow:var(--shadow);background:#f1f5f9;max-width:100%;height:auto;touch-action:none}
+		.exit{position:absolute;right:24px;bottom:24px;background:#22c55e;color:#fff;border-radius:8px;padding:6px 10px;font-weight:800}
+
+		.overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45)}
+		.overlay.open{display:flex}
+		.dialog{background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:16px;text-align:center;max-width:420px}
+		.ad-banner{height:60px;background:#fff;border-top:1px solid #eee;display:flex;align-items:center;justify-content:center}
+	</style>
+  <script defer src="/scripts/game-brand.js"></script>
+  <script defer src="/game-shell.js"></script>
+</head>
+<body>
+	<div class="wrap">
+		<header>
+			<a href="/index.html">← Home</a>
+			<div class="hud">
+				<div class="pill">Time: <span id="time">60s</span></div>
+				<div class="pill">Progress: <span id="progress">Start → Exit</span></div>
+				<button class="btn secondary" id="btnShuffle">New Maze</button>
+			</div>
+		</header>
+
+		<main>
+			<section class="panel">
+				<h2 class="title">How to Play</h2>
+				<div class="legend">Drag the red ball (or use arrow keys) through the maze. Walls stop you. Reach the green exit before time runs out.</div>
+			</section>
+			<section class="panel">
+				<h2 class="title">Maze Board</h2>
+				<div class="board">
+					<canvas id="maze" width="640" height="480"></canvas>
+					
+				</div>
+			</section>
+		</main>
+
+		<div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+	</div>
+
+	<div id="modal" class="overlay" role="dialog" aria-modal="true">
+		<div class="dialog">
+			<h2 id="resultTitle">You Win!</h2>
+			<p id="resultDesc" class="legend">Great escape! Want to play again?</p>
+			<div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+				<button class="btn" id="btnPlayAgain">Play Again</button>
+				<a class="btn secondary" href="/index.html">Home</a>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// --- Audio helpers ---
+		let _audioCtx=null; function getAC(){ const AC=window.AudioContext||window.webkitAudioContext; if(!_audioCtx && AC){ _audioCtx=new AC(); } return _audioCtx; }
+		function beep(freq=620,dur=0.08,type='sine',vol=0.25){ const ac=getAC(); if(!ac) return; if(ac.state==='suspended'){ try{ac.resume();}catch(_){} } const o=ac.createOscillator(),g=ac.createGain(); o.type=type; o.frequency.value=freq; const t=ac.currentTime; g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur); }
+
+		const W=640,H=480, CELL=32; // grid size
+		const ROWS=Math.floor(H/CELL), COLS=Math.floor(W/CELL);
+		let grid=[], start={x:1,y:1}, exit={x:COLS-2,y:ROWS-2};
+		const player={x:0,y:0,r:10,drag:false};
+		let timeLeft=60, timer=null;
+
+		function rand(n){ return Math.floor(Math.random()*n); }
+
+		// Simple randomized depth-first maze
+		function generateMaze(){
+			grid=[...Array(ROWS)].map(()=>Array(COLS).fill(1)); // 1=wall, 0=path
+			function carve(x,y){ grid[y][x]=0; const dirs=[[1,0],[-1,0],[0,1],[0,-1]].sort(()=>Math.random()-0.5); for(const [dx,dy] of dirs){ const nx=x+dx*2, ny=y+dy*2; if(nx>0&&nx<COLS-1&&ny>0&&ny<ROWS-1 && grid[ny][nx]===1){ grid[y+dy][x+dx]=0; carve(nx,ny);} }
+			}
+			carve(1,1); start={x:1,y:1}; exit={x:COLS-2,y:ROWS-2};
+		}
+
+		function draw(ctx){
+			ctx.clearRect(0,0,W,H);
+			// walls
+			ctx.fillStyle='#334155';
+			for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++) if(grid[y][x]===1) ctx.fillRect(x*CELL,y*CELL,CELL,CELL);
+			// path
+			ctx.fillStyle='#f1f5f9';
+			for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++) if(grid[y][x]===0) ctx.fillRect(x*CELL,y*CELL,CELL,CELL);
+			// start & exit
+			ctx.fillStyle='#22c55e'; ctx.fillRect(exit.x*CELL+8, exit.y*CELL+8, CELL-16, CELL-16);
+			ctx.fillStyle='#0ea5e9'; ctx.fillRect(start.x*CELL+8, start.y*CELL+8, CELL-16, CELL-16);
+			// player
+			ctx.beginPath(); ctx.fillStyle='#ef4444'; ctx.arc(player.x,player.y,player.r,0,Math.PI*2); ctx.fill();
+		}
+
+		function resetPlayer(){ player.x=start.x*CELL+CELL/2; player.y=start.y*CELL+CELL/2; }
+
+		function startTimer(){ const t=document.getElementById('time'); timeLeft=60; t.textContent=`${timeLeft}s`; t.style.color='#111'; if(timer) clearInterval(timer); timer=setInterval(()=>{ timeLeft-=1; t.textContent=`${timeLeft}s`; if(timeLeft<=10) t.style.color='var(--warn)'; if(timeLeft<=0){ clearInterval(timer); endGame(false); } },1000); }
+
+		function endGame(won){ if(timer) clearInterval(timer); const modal=document.getElementById('modal'); modal.classList.add('open'); document.getElementById('resultTitle').textContent = won ? 'You Win! 🎉' : 'Time’s Up! ⏲️'; document.getElementById('resultDesc').textContent = won ? 'Great escape! Want to play again?' : 'Try again and avoid the walls!'; beep(won?540:240,0.10, won?'sine':'sawtooth', 0.22); if(won && window.Celebration){ try{ window.Celebration.celebrate(); }catch(_){} } }
+
+		function collideWalls(nx,ny){ // circle vs grid: test centre plus 4 edge points of the player
+			const r=player.r-2;
+			const pts=[[nx,ny],[nx+r,ny],[nx-r,ny],[nx,ny+r],[nx,ny-r]];
+			for(const [px,py] of pts){
+				const cx=Math.floor(px/CELL), cy=Math.floor(py/CELL);
+				if(cx<0||cy<0||cx>=COLS||cy>=ROWS) return true;
+				if(grid[cy][cx]===1) return true;
+			}
+			return false;
+		}
+
+		function reachedExit(){ const ex=exit.x*CELL+CELL/2, ey=exit.y*CELL+CELL/2; const dx=player.x-ex, dy=player.y-ey; return Math.hypot(dx,dy) < CELL/2-4; }
+
+		// Convert pointer position to canvas coordinates (canvas may be scaled down on phones)
+		function toCanvas(canvas,e){ const rect=canvas.getBoundingClientRect(); return { x:(e.clientX-rect.left)*(canvas.width/rect.width), y:(e.clientY-rect.top)*(canvas.height/rect.height) }; }
+
+		// Move toward target in small steps so fast drags can't tunnel through walls
+		function moveToward(tx,ty){
+			const dx=tx-player.x, dy=ty-player.y; const dist=Math.hypot(dx,dy); if(dist<0.5) return;
+			const steps=Math.ceil(dist/3);
+			for(let i=0;i<steps;i++){
+				const sx=dx/steps, sy=dy/steps;
+				if(!collideWalls(player.x+sx,player.y+sy)){ player.x+=sx; player.y+=sy; }
+				else if(!collideWalls(player.x+sx,player.y)){ player.x+=sx; }      // slide along walls
+				else if(!collideWalls(player.x,player.y+sy)){ player.y+=sy; }
+				else { if(performance.now()-lastBump>250){ lastBump=performance.now(); beep(220,0.05,'sawtooth',0.12); } return; }
+			}
+		}
+		let lastBump=0, running=false, rafId=0, level=1;
+
+		function bindInput(canvas){
+			canvas.style.touchAction='none';
+			canvas.addEventListener('pointerdown',(e)=>{
+				if(!running) return;
+				const p=toCanvas(canvas,e); const d=Math.hypot(p.x-player.x,p.y-player.y);
+				if(d<=player.r+CELL){ player.drag=true; try{ canvas.setPointerCapture(e.pointerId); }catch(_){} beep(720,0.08,'triangle',0.22); }
+			});
+			canvas.addEventListener('pointermove',(e)=>{ if(!player.drag||!running) return; const p=toCanvas(canvas,e); moveToward(p.x,p.y); });
+			const stop=()=>{ player.drag=false; };
+			canvas.addEventListener('pointerup',stop); canvas.addEventListener('pointercancel',stop);
+			// keyboard support
+			window.addEventListener('keydown',(e)=>{
+				if(!running) return;
+				const k={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[e.key]; if(!k) return; e.preventDefault();
+				moveToward(player.x+k[0]*CELL/2, player.y+k[1]*CELL/2);
+			});
+		}
+
+		let ctx=null;
+		function init(){
+			const canvas=document.getElementById('maze'); ctx=ctx||canvas.getContext('2d');
+			generateMaze(); resetPlayer(); running=true; startTimer();
+			document.getElementById('progress').textContent='Level '+level;
+			cancelAnimationFrame(rafId);
+			const loop=()=>{ draw(ctx); if(running && reachedExit()){ running=false; level++; endGame(true); return; } rafId=requestAnimationFrame(loop); }; loop();
+		}
+		const _endGame=endGame; endGame=function(won){ running=false; if(!won) level=1; _endGame(won); };
+		function restart(){ document.getElementById('modal').classList.remove('open'); init(); }
+
+		window.addEventListener('DOMContentLoaded', ()=>{
+			bindInput(document.getElementById('maze'));
+			init();
+			document.getElementById('btnShuffle').addEventListener('click', ()=>{ document.getElementById('modal').classList.remove('open'); init(); });
+			document.getElementById('btnPlayAgain').addEventListener('click', restart);
+		});
+	</script>
+</body>
+</html>
+

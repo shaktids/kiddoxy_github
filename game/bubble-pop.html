@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Bubble Pop</title>
+<link rel="stylesheet" href="/styles/games.css">
+<link rel="stylesheet" href="/styles.css">
+<style>
+  :root {
+    --bg-top: #ec4899;
+    --bg-bottom: #a855f7;
+    --surface: #ffffffea;
+    --ink: #701a75;
+    --muted: #a21caf;
+    --accent: #ec4899;
+    --ok: #22c55e;
+    --warn: #ef4444;
+    --sky-1: #fbcfe8;
+    --sky-2: #f5d0fe;
+    --sky-3: #ddd6fe;
+    --panel: #ffffffea;
+    --accent-2: #2563eb;
+    --mint: #6ee7b7;
+  }
+
+  * { box-sizing: border-box; }
+
+  body.game-shell {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    font-family: "Baloo 2", "Comic Sans MS", "Trebuchet MS", sans-serif;
+    background:
+      radial-gradient(circle at 15% 10%, #ffffffc4 0 12%, transparent 13%),
+      radial-gradient(circle at 84% 16%, #fff3cbab 0 13%, transparent 14%),
+      linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+    padding-bottom: 92px;
+  }
+
+  .wrap {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+  }
+
+  .shell {
+    width: min(560px, 96vw);
+    margin: 12px auto;
+    border-radius: 24px;
+    border: 3px solid #ffffffbf;
+    background: var(--surface);
+    box-shadow: 0 18px 30px #701a7533;
+    padding: 12px;
+  }
+
+  .title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+
+  .title-icon {
+    font-size: 2rem;
+  }
+
+  .title-wrap h1 {
+    margin: 0;
+    font-weight: 800;
+    font-size: clamp(1.2rem, 4vw, 1.9rem);
+  }
+
+  .helper {
+    margin: 0 0 10px;
+    text-align: center;
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  .status-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .stats {
+    background: #fdf4ff;
+    border: 2px solid #f0abfc;
+    border-radius: 12px;
+    min-height: 52px;
+    padding: 6px 10px;
+    display: grid;
+    place-content: center;
+    text-align: center;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .stats strong {
+    font-size: 1.2rem;
+  }
+
+  .bubble-shell {
+    width: 100%;
+    padding: 0;
+  }
+
+  .board {
+    width: 100%;
+  }
+
+  .btn {
+    border: 0;
+    border-radius: 12px;
+    color: #fff;
+    padding: 11px 18px;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 120ms ease, filter 120ms ease;
+  }
+
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.65; cursor: not-allowed; }
+
+  .btn.start { background: linear-gradient(180deg, var(--accent), #ec4d4d); }
+  .btn.reset { background: linear-gradient(180deg, var(--accent-2), #1e40af); }
+
+  .fixed-controls {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 12px;
+    background: linear-gradient(180deg, rgba(236,72,153,0), rgba(236,72,153,0.96));
+    backdrop-filter: blur(4px);
+  }
+
+  .play-area {
+    position: relative;
+    width: 100%;
+    height: clamp(320px, 57vh, 620px);
+    border-radius: 18px;
+    overflow: hidden;
+    border: 3px solid #fff;
+    box-shadow: inset 0 0 0 2px #94bffc8f, 0 12px 20px #0d3f7024;
+    background:
+      repeating-linear-gradient(90deg, transparent 0 31px, #ffffff40 31px 32px),
+      linear-gradient(180deg, #d1f6ff 0%, #b8e7ff 45%, #9dd5ff 100%);
+  }
+
+  .play-area::before,
+  .play-area::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    background: #ffffffc4;
+    opacity: 0.56;
+    pointer-events: none;
+  }
+
+  .play-area::before {
+    top: 10px;
+    left: 14px;
+    width: 130px;
+    height: 56px;
+  }
+
+  .play-area::after {
+    top: 20px;
+    right: 20px;
+    width: 144px;
+    height: 60px;
+  }
+
+  .bubble {
+    position: absolute;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    border: 2px solid #ffffff;
+    box-shadow: 0 8px 16px #0f357133;
+    background: radial-gradient(circle at 30% 25%, #fff9 0 30%, #ffd7e0 31% 100%);
+    touch-action: manipulation;
+    animation: bob 2.8s ease-in-out infinite;
+  }
+
+  .bubble:nth-child(4n) { background: radial-gradient(circle at 30% 25%, #fff9 0 30%, #f9d9ff 31% 100%); }
+  .bubble:nth-child(4n+1) { background: radial-gradient(circle at 30% 25%, #fff9 0 30%, #ffe6a4 31% 100%); }
+  .bubble:nth-child(4n+2) { background: radial-gradient(circle at 30% 25%, #fff9 0 30%, #bfe8ff 31% 100%); }
+  .bubble:nth-child(4n+3) { background: radial-gradient(circle at 30% 25%, #fff9 0 30%, #c7f4d8 31% 100%); }
+
+  .bubble.pop {
+    transform: scale(1.15);
+    filter: saturate(1.2);
+    background: radial-gradient(circle at 30% 25%, #fff9 0 30%, #6ee7b7 31% 100%);
+  }
+
+  #banner {
+    height: 42px;
+    background: #f1f5f9;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .howto-btn {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 1001;
+    width: 54px;
+    height: 54px;
+    border: 0;
+    border-radius: 999px;
+    color: #fff;
+    background: linear-gradient(180deg, #2f74ff, #1e40af);
+    box-shadow: 0 8px 14px #1d4ed863;
+    font-size: 1.5rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .howto-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: #061c3e7c;
+  }
+
+  .howto-modal.open { display: flex; }
+
+  .howto-dialog {
+    width: min(420px, 100%);
+    padding: 18px;
+    border-radius: 16px;
+    background: #fff;
+    color: #16314e;
+    border: 2px solid #d8e9ff;
+    box-shadow: 0 14px 24px #0b244a2b;
+    text-align: center;
+  }
+
+  .howto-dialog h2 { margin: 4px 0 8px; }
+
+  .howto-dialog button {
+    margin-top: 14px;
+    border: 0;
+    border-radius: 10px;
+    background: #1d4ed8;
+    color: #fff;
+    font-weight: 700;
+    padding: 9px 20px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+
+  @keyframes bpHand {
+    0% { transform: translate(-50%, -2%); }
+    50% { transform: translate(-50%, 2%); }
+    100% { transform: translate(-50%, -2%); }
+  }
+
+  @keyframes bpPulse {
+    0% { box-shadow: 0 0 0 0 #3b82f659; }
+    70% { box-shadow: 0 0 0 14px #3b82f600; }
+    100% { box-shadow: 0 0 0 0 #3b82f600; }
+  }
+
+  @media (max-width: 760px) {
+    .bubble-shell {
+      width: min(100%, 96vw);
+      border-radius: 18px;
+      padding: 10px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 10px 12px;
+    }
+
+    .play-area {
+      height: min(56vh, 420px);
+      border-radius: 14px;
+    }
+
+    .howto-btn {
+      right: 12px;
+      bottom: 12px;
+      width: 50px;
+      height: 50px;
+      font-size: 1.3rem;
+    }
+
+    .fixed-controls {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .play-area { height: min(52vh, 360px); }
+  }
+</style>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body class="game-shell">
+  <div class="wrap">
+    <section class="shell bubble-shell" aria-label="Bubble Pop Game">
+      <div class="title-wrap">
+        <span class="title-icon">🍬</span>
+        <h1>Bubble Pop</h1>
+      </div>
+      <p class="helper">Pop candy bubbles before time runs out.</p>
+      <div class="status-row">
+        <div id="score" class="stats">Score<br><strong>0</strong></div>
+        <div id="timer" class="stats">Time<br><strong>25s</strong></div>
+      </div>
+      <div class="board">
+        <div id="area" class="play-area" aria-live="polite"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="fixed-controls">
+    <button id="start" class="btn start">Start</button>
+    <button id="reset" class="btn reset">Reset</button>
+  </div>
+
+  <div class="sr-only" id="gameAnnounce" aria-live="assertive"></div>
+  <div id="banner">Ad banner</div>
+
+  <button class="howto-btn" id="howtoBtn" title="How to Play" aria-label="How to Play">?</button>
+  <div class="howto-modal" id="howtoModal" role="dialog" aria-modal="true" aria-labelledby="howtoTitle">
+    <div class="howto-dialog">
+      <h2 id="howtoTitle">How to Play</h2>
+      <div>Tap bubbles before they fly away. Pop as many as possible before time ends.</div>
+      <button id="howtoClose">Close</button>
+    </div>
+  </div>
+
+  <div id="ageModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Age verification">
+    <div class="modal-content">
+      <h2>Are you a parent?</h2>
+      <p>Please enter your birth year to continue to parental settings.</p>
+      <input id="birthYear" type="number" placeholder="e.g. 1980" min="1900" max="2025" />
+      <div class="modal-actions">
+        <button id="ageSubmit">Confirm</button>
+        <button id="ageCancel" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/scripts/game-core.js"></script>
+  <script>
+  (function(){
+    const area = document.getElementById('area');
+    const scoreEl = document.getElementById('score');
+    const timerEl = document.getElementById('timer');
+    const startBtn = document.getElementById('start');
+    const resetBtn = document.getElementById('reset');
+    const announcer = document.getElementById('gameAnnounce');
+
+    const GAME_TIME = 25;
+    let running = false;
+    let score = 0;
+    let timeLeft = GAME_TIME;
+    let spawnTimer = null;
+    let tickTimer = null;
+
+    function announce(message) {
+      if (!announcer) return;
+      announcer.textContent = '';
+      setTimeout(() => { announcer.textContent = message; }, 10);
+    }
+
+    function bubbleSize() {
+      const w = area.clientWidth;
+      if (w < 360) return 44 + Math.floor(Math.random() * 30);
+      if (w < 520) return 50 + Math.floor(Math.random() * 35);
+      return 56 + Math.floor(Math.random() * 44);
+    }
+
+    function updateStats() {
+      scoreEl.innerHTML = 'Score<br><strong>' + score + '</strong>';
+      timerEl.innerHTML = 'Time<br><strong>' + timeLeft + 's</strong>';
+    }
+
+    function clearBubbles() {
+      while (area.firstChild) area.removeChild(area.firstChild);
+    }
+
+    function spawnBubble() {
+      if (!running) return;
+      const b = document.createElement('div');
+      const size = bubbleSize();
+      const maxX = Math.max(10, area.clientWidth - size);
+      const startY = area.clientHeight + size;
+      b.className = 'bubble';
+      b.style.width = size + 'px';
+      b.style.height = size + 'px';
+      b.style.left = Math.random() * maxX + 'px';
+      b.style.top = startY + 'px';
+      area.appendChild(b);
+
+      const travel = area.clientHeight + size + 60;
+      const duration = 2300 + Math.random() * 2200;
+      const anim = b.animate(
+        [{ transform: 'translateY(0)' }, { transform: 'translateY(-' + travel + 'px)' }],
+        { duration, easing: 'linear' }
+      );
+
+      const removeBubble = () => {
+        if (b.parentNode) b.remove();
+      };
+
+      b.addEventListener('click', () => {
+        if (!running) return;
+        score += 1;
+        updateStats();
+        b.classList.add('pop');
+        if (window.gameCore && typeof gameCore.playTone === 'function') gameCore.playTone(880, 0.05);
+        setTimeout(removeBubble, 90);
+      }, { passive: true });
+
+      anim.onfinish = removeBubble;
+    }
+
+    function startGame() {
+      if (running) return;
+      running = true;
+      score = 0;
+      timeLeft = GAME_TIME;
+      clearBubbles();
+      updateStats();
+      startBtn.disabled = true;
+      announce('Game started. Pop as many bubbles as you can.');
+
+      spawnTimer = setInterval(spawnBubble, 320);
+      tickTimer = setInterval(() => {
+        timeLeft -= 1;
+        updateStats();
+        if (timeLeft <= 0) endGame();
+      }, 1000);
+    }
+
+    function endGame() {
+      if (!running) return;
+      running = false;
+      startBtn.disabled = false;
+      clearInterval(spawnTimer);
+      clearInterval(tickTimer);
+      spawnTimer = null;
+      tickTimer = null;
+      announce('Time is up. Your score is ' + score + '.');
+      if (window.gameCore && typeof gameCore.celebrate === 'function') gameCore.celebrate('balloons');
+      setTimeout(() => {
+        alert('Time\'s up! Score: ' + score);
+      }, 120);
+    }
+
+    function resetGame() {
+      running = false;
+      clearInterval(spawnTimer);
+      clearInterval(tickTimer);
+      spawnTimer = null;
+      tickTimer = null;
+      score = 0;
+      timeLeft = GAME_TIME;
+      updateStats();
+      clearBubbles();
+      startBtn.disabled = false;
+      announce('Game reset. Press Start to play.');
+    }
+
+    startBtn.addEventListener('click', startGame);
+    resetBtn.addEventListener('click', resetGame);
+    window.addEventListener('resize', () => {
+      if (!running) clearBubbles();
+    });
+
+    resetGame();
+  })();
+  </script>
+
+  <script>
+  // Bubble Pop: first-time tutorial
+  (function(){
+    const KEY = 'kdx_tut_bubble_v1';
+
+    function speak(text){
+      try {
+        if (!('speechSynthesis' in window)) return;
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        u.rate = 0.98;
+        u.pitch = 1.0;
+        speechSynthesis.cancel();
+        speechSynthesis.speak(u);
+      } catch (_) {}
+    }
+
+    function hand(target){
+      const d = document.createElement('div');
+      d.textContent = 'Tap';
+      d.style.position = 'fixed';
+      d.style.zIndex = '10002';
+      d.style.padding = '5px 9px';
+      d.style.borderRadius = '999px';
+      d.style.fontWeight = '800';
+      d.style.fontFamily = 'inherit';
+      d.style.background = '#ffffff';
+      d.style.color = '#1d4ed8';
+      d.style.border = '2px solid #93c5fd';
+      d.style.pointerEvents = 'none';
+      d.style.animation = 'bpHand 1.2s ease-in-out infinite';
+      posHand(d, target);
+      return d;
+    }
+
+    function posHand(el, target){
+      const r = target.getBoundingClientRect();
+      const x = r.left + r.width * 0.68;
+      const y = r.top + r.height + 8;
+      el.style.left = Math.max(20, Math.min(window.innerWidth - 20, x)) + 'px';
+      el.style.top = Math.max(20, Math.min(window.innerHeight - 20, y)) + 'px';
+      el.style.transform = 'translate(-50%, -2%)';
+    }
+
+    function ring(target){
+      const d = document.createElement('div');
+      d.style.position = 'fixed';
+      d.style.zIndex = '10001';
+      d.style.pointerEvents = 'none';
+      d.style.borderRadius = '999px';
+      d.style.border = '3px solid #3b82f6';
+      d.style.animation = 'bpPulse 1.4s ease-out infinite';
+      d.style.background = 'rgba(59,130,246,.08)';
+      posRing(d, target);
+      return d;
+    }
+
+    function posRing(el, target){
+      const r = target.getBoundingClientRect();
+      const size = Math.max(36, Math.min(110, Math.max(r.width, r.height)));
+      el.style.width = size + 'px';
+      el.style.height = size + 'px';
+      el.style.left = (r.left + r.width / 2) + 'px';
+      el.style.top = (r.top + r.height / 2) + 'px';
+      el.style.transform = 'translate(-50%, -50%)';
+    }
+
+    function findBubble(){
+      return document.querySelector('.bubble');
+    }
+
+    function startTutorial(){
+      if (localStorage.getItem(KEY)) return;
+      const startBtn = document.getElementById('start');
+      if (!startBtn) return;
+
+      let h = null;
+      let r = null;
+      const cleanup = () => {
+        if (h) h.remove();
+        if (r) r.remove();
+        h = null;
+        r = null;
+        try { speechSynthesis.cancel(); } catch (_) {}
+      };
+
+      const onResize = () => {
+        if (h) posHand(h, startBtn);
+        if (r) posRing(r, startBtn);
+      };
+
+      window.addEventListener('resize', onResize);
+      r = ring(startBtn);
+      h = hand(startBtn);
+      document.body.appendChild(r);
+      document.body.appendChild(h);
+      speak('Tap Start to begin.');
+
+      startBtn.addEventListener('click', () => {
+        window.removeEventListener('resize', onResize);
+        cleanup();
+        stepBubble(1);
+      }, { once: true });
+    }
+
+    function stepBubble(count){
+      let attempts = 0;
+      const wait = () => {
+        attempts += 1;
+        const b = findBubble();
+        if (b) {
+          guideBubble(b, () => {
+            if (count >= 2) {
+              localStorage.setItem(KEY, '1');
+            } else {
+              stepBubble(count + 1);
+            }
+          });
+        } else if (attempts < 120) {
+          setTimeout(wait, 60);
+        }
+      };
+      wait();
+    }
+
+    function guideBubble(bubble, done){
+      let h = null;
+      let r = null;
+      let rafId = null;
+
+      const follow = () => {
+        if (!bubble || !bubble.parentNode) {
+          cancel();
+          return;
+        }
+        posRing(r, bubble);
+        posHand(h, bubble);
+        rafId = requestAnimationFrame(follow);
+      };
+
+      const cancel = () => {
+        try { speechSynthesis.cancel(); } catch (_) {}
+        if (h) h.remove();
+        if (r) r.remove();
+        if (rafId) cancelAnimationFrame(rafId);
+      };
+
+      r = ring(bubble);
+      h = hand(bubble);
+      document.body.appendChild(r);
+      document.body.appendChild(h);
+      speak('Pop the bubble!');
+      rafId = requestAnimationFrame(follow);
+
+      bubble.addEventListener('click', () => {
+        cancel();
+        if (done) done();
+      }, { once: true, passive: true });
+    }
+
+    window.addEventListener('DOMContentLoaded', startTutorial);
+  })();
+  </script>
+
+  <script>
+    const howtoBtn = document.getElementById('howtoBtn');
+    const howtoModal = document.getElementById('howtoModal');
+    const howtoClose = document.getElementById('howtoClose');
+
+    howtoBtn.addEventListener('click', () => {
+      howtoModal.classList.add('open');
+    });
+
+    howtoClose.addEventListener('click', () => {
+      howtoModal.classList.remove('open');
+    });
+
+    howtoModal.addEventListener('click', (e) => {
+      if (e.target === howtoModal) howtoModal.classList.remove('open');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') howtoModal.classList.remove('open');
+    });
+  </script>
+
+  <script type="module">
+    import { injectNavbar } from '/scripts/navbar-footer.js';
+    injectNavbar();
+    window.addEventListener('DOMContentLoaded', () => {
+      var parentBtn = document.getElementById('parent-btn');
+      if (parentBtn) {
+        parentBtn.addEventListener('click', function(){
+          if (typeof showParentalGate === 'function') showParentalGate();
+        });
+      }
+      var ageSubmit = document.getElementById('ageSubmit');
+      if (ageSubmit) {
+        ageSubmit.addEventListener('click', function(){
+          const year = parseInt(document.getElementById('birthYear').value || '0', 10);
+          if (isNaN(year)) return;
+          if (typeof handleParentalConfirm === 'function') handleParentalConfirm(year);
+        });
+      }
+      var ageCancel = document.getElementById('ageCancel');
+      if (ageCancel) {
+        ageCancel.addEventListener('click', function(){
+          if (typeof closeParentalModal === 'function') closeParentalModal();
+        });
+      }
+    });
+  </script>
+  <script src="/game-shell.js"></script>
+</body>
+</html>

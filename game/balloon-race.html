@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+	<title>Balloon Race</title>
+	<link rel="stylesheet" href="/styles.css">
+	<style>
+		:root {
+			--bg-top: #e0f2fe;
+			--bg-bottom: #38bdf8;
+			--surface: #ffffffea;
+			--ink: #0c2d3b;
+			--muted: #0369a1;
+			--accent: #0284c7;
+			--ok: #22c55e;
+			--warn: #dc2626;
+			--shadow: 0 14px 28px rgba(12, 45, 59, 0.16);
+		}
+
+		* { box-sizing: border-box; }
+
+		html, body {
+			height: 100%;
+			margin: 0;
+			font-family: "Baloo 2", "Trebuchet MS", "Comic Sans MS", sans-serif;
+			color: var(--ink);
+		}
+
+		body {
+			background:
+				radial-gradient(circle at 12% 12%, #ffffffd6 0 12%, transparent 13%),
+				radial-gradient(circle at 88% 16%, #cce5ffb9 0 12%, transparent 13%),
+				linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+		}
+
+		.wrap {
+			min-height: 100vh;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.shell {
+			width: min(980px, 96vw);
+			margin: 12px auto;
+			padding: 12px;
+			border-radius: 22px;
+			background: var(--surface);
+			border: 2px solid #ffffffcc;
+			box-shadow: var(--shadow);
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+		}
+
+		header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 10px;
+			flex-wrap: wrap;
+			padding: 6px 2px 10px;
+		}
+
+		.title-wrap {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			background: #ffffffeb;
+			border: 2px solid #bae6fd;
+			border-radius: 999px;
+			padding: 8px 12px;
+			box-shadow: 0 8px 14px #0284c72e;
+		}
+
+		.title-icon {
+			width: 40px;
+			height: 40px;
+			border-radius: 11px;
+			display: grid;
+			place-items: center;
+			color: #fff;
+			font-size: 1.2rem;
+			font-weight: 800;
+			background: linear-gradient(150deg, #0284c7, #0369a1);
+		}
+
+		h1 {
+			margin: 0;
+			font-size: clamp(1.05rem, 3.8vw, 1.8rem);
+			font-weight: 800;
+			line-height: 1.1;
+		}
+
+		.hud {
+			display: flex;
+			gap: 8px;
+			align-items: center;
+			flex-wrap: wrap;
+		}
+
+		.pill {
+			background: #ffffffde;
+			border: 1px solid #bae6fd;
+			border-radius: 999px;
+			padding: 8px 12px;
+			font-size: 0.95em;
+			font-weight: 800;
+			color: var(--ink);
+		}
+
+		.btn {
+			background: linear-gradient(180deg, var(--accent), #0369a1);
+			color: #fff;
+			border: none;
+			border-radius: 12px;
+			padding: 10px 16px;
+			font-weight: 800;
+			cursor: pointer;
+			transition: transform 0.12s;
+			box-shadow: 0 6px 12px rgba(2, 132, 199, 0.24);
+		}
+
+		.btn:active { transform: scale(0.96); }
+
+		.btn.secondary {
+			background: #e5e7eb;
+			color: #111;
+		}
+
+		.helper {
+			text-align: center;
+			color: var(--muted);
+			font-size: 0.95em;
+			margin: 8px 0 12px;
+			font-weight: 600;
+		}
+
+		main {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			padding: 12px;
+		}
+
+		.game-area {
+			width: 100%;
+			max-width: 500px;
+			height: clamp(300px, 54vh, 520px);
+			border-radius: 18px;
+			background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+			box-shadow: 0 12px 26px rgba(12, 45, 59, 0.12);
+			border: 3px solid #fff;
+			position: relative;
+			overflow: hidden;
+		}
+
+		.balloon {
+			position: absolute;
+			width: 40px;
+			height: 50px;
+			border-radius: 50% 50% 50% 0;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 1.2em;
+			cursor: pointer;
+			transition: all 0.15s;
+			filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+		}
+
+		.balloon::after {
+			content: "";
+			position: absolute;
+			bottom: -30px;
+			left: 50%;
+			width: 1px;
+			height: 30px;
+			background: #ddd;
+		}
+
+		.status {
+			padding: 12px;
+			text-align: center;
+			color: var(--muted);
+			font-weight: 600;
+			font-size: 0.95em;
+			min-height: 20px;
+		}
+
+		.modal,
+		.overlay {
+			position: fixed;
+			inset: 0;
+			background: rgba(0, 0, 0, 0.45);
+			display: none;
+			align-items: center;
+			justify-content: center;
+			z-index: 1200;
+			padding: 14px;
+		}
+
+		.modal.open,
+		.overlay.open {
+			display: flex;
+		}
+
+		.dialog {
+			background: var(--surface);
+			border-radius: 16px;
+			box-shadow: var(--shadow);
+			padding: 20px;
+			max-width: 400px;
+			text-align: center;
+			border: 2px solid #ffffffcc;
+		}
+
+		.dialog h2 {
+			margin: 0 0 10px;
+			color: var(--ink);
+			font-size: 1.4em;
+		}
+
+		.dialog p {
+			margin: 0;
+			color: var(--muted);
+		}
+
+		.howto-btn {
+			position: fixed;
+			bottom: 24px;
+			right: 24px;
+			z-index: 1001;
+			background: linear-gradient(180deg, var(--accent), #0369a1);
+			color: #fff;
+			border: none;
+			border-radius: 50%;
+			width: 56px;
+			height: 56px;
+			box-shadow: 0 6px 18px rgba(2, 132, 199, 0.3);
+			font-size: 28px;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transition: transform 0.12s;
+		}
+
+		.howto-btn:active { transform: scale(0.92); }
+
+		.howto-modal {
+			position: fixed;
+			inset: 0;
+			background: rgba(0, 0, 0, 0.45);
+			display: none;
+			align-items: center;
+			justify-content: center;
+			z-index: 1200;
+			padding: 14px;
+		}
+
+		.howto-modal.open { display: flex; }
+
+		.howto-dialog {
+			background: var(--surface);
+			border-radius: 16px;
+			box-shadow: var(--shadow);
+			padding: 24px 18px 18px;
+			max-width: 380px;
+			text-align: center;
+			border: 2px solid #ffffffcc;
+		}
+
+		.howto-dialog h2 {
+			margin: 0 0 12px;
+			color: var(--ink);
+		}
+
+		.howto-dialog p {
+			margin: 0 0 18px;
+			color: var(--muted);
+			line-height: 1.5;
+		}
+
+		.howto-close {
+			background: linear-gradient(180deg, var(--accent), #0369a1);
+			color: #fff;
+			border: none;
+			border-radius: 10px;
+			padding: 8px 20px;
+			font-weight: 700;
+			cursor: pointer;
+			font-family: inherit;
+		}
+
+		.ad-banner {
+			height: 54px;
+			background: #fff;
+			border-top: 1px solid #eee;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		@media (max-width: 700px) {
+			.shell { padding: 10px; border-radius: 18px; }
+		}
+
+		@media (max-width: 600px) {
+			h1 { font-size: 1.2em; }
+		}
+
+		@media (max-width: 480px) {
+			.howto-btn { width: 50px; height: 50px; right: 16px; bottom: 16px; font-size: 24px; }
+		}
+	</style>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body>
+	<div class="wrap">
+		<div class="shell">
+			<header>
+				<div class="title-wrap">
+					<span class="title-icon">🎈</span>
+					<h1>Balloon Race</h1>
+				</div>
+				<div class="hud">
+					<div class="pill">Score: <span id="score">0</span></div>
+					<button class="btn" id="startBtn">Start</button>
+				</div>
+			</header>
+
+			<div class="helper">Pop the balloons before they float away!</div>
+
+			<main>
+				<div class="game-area" id="gameArea"></div>
+			</main>
+
+			<div class="status" id="message">Ready to play?</div>
+		</div>
+
+		<div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+	</div>
+
+	<div id="modal" class="modal" role="dialog" aria-modal="true">
+		<div class="dialog">
+			<h2>Game Over! 🎉</h2>
+			<p id="resultDesc">Great Job!</p>
+			<div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+				<button class="btn" id="btnPlayAgain">Play Again</button>
+				<a class="btn secondary" href="/index.html">Home</a>
+			</div>
+		</div>
+	</div>
+
+	<button class="howto-btn" id="howtoBtn" title="How to Play" aria-label="How to Play">?</button>
+	<div class="howto-modal" id="howtoModal" role="dialog" aria-modal="true" aria-labelledby="howtoTitle">
+		<div class="howto-dialog">
+			<h2 id="howtoTitle">How to Play</h2>
+			<p>Tap the balloons to pop them before they float to the top! Try to pop as many as possible to get a high score!</p>
+			<button id="howtoClose" class="howto-close">Got It</button>
+		</div>
+	</div>
+
+	<script>
+		let _audioCtx=null;
+		function getAC(){
+			const AC=window.AudioContext||window.webkitAudioContext;
+			if(!_audioCtx && AC){ _audioCtx=new AC(); }
+			return _audioCtx;
+		}
+		function beep(freq=620, dur=0.08, type='sine', vol=0.25){
+			const ac=getAC();
+			if(!ac) return;
+			if(ac.state==='suspended'){ try{ac.resume();}catch(_){} }
+			const o=ac.createOscillator(), g=ac.createGain();
+			o.type=type;
+			o.frequency.value=freq;
+			const t=ac.currentTime;
+			g.gain.setValueAtTime(vol, t);
+			g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+			o.connect(g).connect(ac.destination);
+			o.start(t);
+			o.stop(t+dur);
+		}
+
+		const gameArea = document.getElementById('gameArea');
+		const scoreEl = document.getElementById('score');
+		const modal = document.getElementById('modal');
+		const resultDesc = document.getElementById('resultDesc');
+
+		const COLORS = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#f38181'];
+		let score = 0, gameRunning = false;
+		let spawnTimer = null, gameTimer = null;
+
+		function createBalloon(){
+			if(!gameRunning) return;
+			const balloon = document.createElement('div');
+			balloon.className = 'balloon';
+			balloon.style.left = Math.random() * 90 + '%';
+			balloon.style.bottom = '-60px';
+			balloon.style.backgroundColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+			
+			let bottom = -60;
+			const float = setInterval(()=>{
+				bottom += 2;
+				balloon.style.bottom = bottom + 'px';
+				
+				if(bottom > gameArea.clientHeight){
+					clearInterval(float);
+					if(balloon && balloon.parentNode) balloon.remove();
+				}
+			}, 50);
+
+			balloon.addEventListener('click', (e)=>{
+				e.stopPropagation();
+				clearInterval(float);
+				balloon.remove();
+				score += 10;
+				scoreEl.textContent = score;
+				beep(880, 0.08, 'sine', 0.22);
+			});
+
+			gameArea.appendChild(balloon);
+		}
+
+		function startGame(){
+			if(gameRunning) return;
+			gameRunning = true;
+			score = 0;
+			scoreEl.textContent = score;
+			modal.classList.remove('open');
+			
+			spawnTimer = setInterval(createBalloon, 800);
+			gameTimer = setTimeout(()=>{
+				endGame();
+			}, 30000);
+		}
+
+		function endGame(){
+			gameRunning = false;
+			if(spawnTimer) clearInterval(spawnTimer);
+			if(gameTimer) clearTimeout(gameTimer);
+			
+			const balloons = gameArea.querySelectorAll('.balloon');
+			balloons.forEach(b => b.remove());
+			
+			resultDesc.textContent = 'You popped ' + score/10 + ' balloons!';
+			beep(820, 0.12, 'sine', 0.24);
+			modal.classList.add('open');
+		}
+
+		document.getElementById('startBtn').addEventListener('click', startGame);
+		document.getElementById('btnPlayAgain').addEventListener('click', startGame);
+
+		document.addEventListener('DOMContentLoaded', function() {
+			const howtoBtn = document.getElementById('howtoBtn');
+			const howtoModal = document.getElementById('howtoModal');
+			const howtoClose = document.getElementById('howtoClose');
+			howtoBtn.addEventListener('click', () => {
+				howtoModal.classList.add('open');
+			});
+			howtoClose.addEventListener('click', () => {
+				howtoModal.classList.remove('open');
+			});
+			howtoModal.addEventListener('click', (e) => {
+				if(e.target === howtoModal) howtoModal.classList.remove('open');
+			});
+		});
+	</script>
+
+	<div id="ageModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Age verification">
+		<div class="modal-content">
+			<h2>Are you a parent?</h2>
+			<p>Please enter your birth year to continue to parental settings.</p>
+			<input id="birthYear" type="number" placeholder="e.g. 1980" min="1900" max="2025" />
+			<div class="modal-actions">
+				<button id="ageSubmit">Confirm</button>
+				<button id="ageCancel" class="secondary">Cancel</button>
+			</div>
+		</div>
+	</div>
+	<script type="module">
+		import { injectNavbar } from '/scripts/navbar-footer.js';
+		injectNavbar();
+		window.addEventListener('DOMContentLoaded', () => {
+			var parentBtn = document.getElementById('parent-btn');
+			if (parentBtn) {
+				parentBtn.addEventListener('click', function(){
+					if (typeof showParentalGate === 'function') showParentalGate();
+				});
+			}
+			var ageSubmit = document.getElementById('ageSubmit');
+			if (ageSubmit) {
+				ageSubmit.addEventListener('click', function(){
+					const year = parseInt(document.getElementById('birthYear').value || '0', 10);
+					if (isNaN(year)) return;
+					if (typeof handleParentalConfirm === 'function') handleParentalConfirm(year);
+				});
+			}
+			var ageCancel = document.getElementById('ageCancel');
+			if (ageCancel) {
+				ageCancel.addEventListener('click', function(){
+					if (typeof closeParentalModal === 'function') closeParentalModal();
+				});
+			}
+		});
+	</script>
+	<script src="/game-shell.js"></script>
+</body>
+</html>

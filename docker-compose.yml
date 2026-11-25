@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  kiddoxy:
+    build: .
+    image: kiddoxy-app
+    container_name: kiddoxy
+    restart: unless-stopped
+    expose:
+      - "8080"
+    networks:
+      - nginx_proxy_network
+
+networks:
+  nginx_proxy_network:
+    external: true
+    name: nginx-proxy-manager_default
+

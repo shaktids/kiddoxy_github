@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kiddoxy — Games for Kids</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/kiddoxy.png" type="image/png">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <!-- Navbar will be injected by navbar-footer.js -->
+
+  <main>
+    <section class="hero">
+      <h1>Play fun & safe games</h1>
+      <p>Browse games by category — designed for young kids with big buttons and simple controls.</p>
+    </section>
+
+    <section class="finder" aria-label="Find a game">
+      <input id="gameSearch" type="search" placeholder="🔍 Search 150+ games… (try “animals”, “spell”, “race”)" aria-label="Search games" autocomplete="off">
+      <div class="chips" id="catChips" role="group" aria-label="Categories"></div>
+    </section>
+
+    <section class="games-grid" id="gamesGrid">
+      <!-- Tiles will be rendered dynamically from data/games.json -->
+    </section>
+  </main>
+
+  <!-- AD_BANNER_BOTTOM: Banner ad placeholder (non-personalized) -->
+  <!-- Example integration point for web/ad networks or native wrappers -->
+  <div id="ad-banner-bottom" class="ad-banner" aria-hidden="true">
+    <!-- Ad placeholder: integrate AdSense/AdMob web tag or SDK in this container -->
+  </div>
+
+  <!-- Footer is injected by navbar-footer.js -->
+  <!-- Parental modal / age gate -->
+  <div id="ageModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Age verification">
+    <div class="modal-content">
+      <h2>Are you a parent?</h2>
+      <p>Please enter your birth year to continue to parental settings.</p>
+      <input id="birthYear" type="number" placeholder="e.g. 1980" min="1900" max="2026" />
+      <div class="modal-actions">
+        <button id="ageSubmit">Confirm</button>
+        <button id="ageCancel" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Render games dynamically -->
+  <script src="/scripts/render-games.js"></script>
+  <script type="module">
+    import { injectNavbar, injectFooter } from '/scripts/navbar-footer.js';
+    injectNavbar();
+    injectFooter();
+  </script>
+  <script src="/game-shell.js"></script>
+  <script>
+    // Register service worker for PWA (best-effort)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js').catch(function(e){
+        console.log('SW registration failed:', e);
+      });
+    }
+
+    // Wait for DOM and injected navbar/footer
+    document.addEventListener('DOMContentLoaded', function() {
+      // Wire parent button to parental gate modal
+      var parentBtn = document.getElementById('parent-btn');
+      if (parentBtn) {
+        parentBtn.addEventListener('click', function(){
+          if (typeof showParentalGate === 'function') showParentalGate();
+        });
+      }
+      var ageSubmit = document.getElementById('ageSubmit');
+      if (ageSubmit) {
+        ageSubmit.addEventListener('click', function(){
+          const year = parseInt(document.getElementById('birthYear').value || '0', 10);
+          if (isNaN(year)) return;
+          if (typeof handleParentalConfirm === 'function') handleParentalConfirm(year);
+        });
+      }
+      var ageCancel = document.getElementById('ageCancel');
+      if (ageCancel) {
+        ageCancel.addEventListener('click', function(){
+          if (typeof closeParentalModal === 'function') closeParentalModal();
+        });
+      }
+    });
+  </script>
+
+  <script>
+    (function() {
+      function checkBaitElement() {
+        try {
+          var bait = document.createElement("div");
+          bait.className = "ads ad adsbox advert banner ad-banner ad-container ad-slot google-adsense";
+          bait.style.cssText = "position:absolute; left:-9999px; width:300px; height:250px;";
+          document.body.appendChild(bait);
+          var cs = window.getComputedStyle(bait);
+          var hidden = !bait || bait.offsetHeight === 0 || bait.offsetWidth === 0 || cs.display === "none" || cs.visibility === "hidden";
+          document.body.removeChild(bait);
+          return hidden;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function checkNetworkBlock() {
+        return fetch("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js", { mode: "no-cors", cache: "no-store" })
+          .then(() => false)
+          .catch(() => true);
+      }
+
+      function checkScriptBlock() {
+        return new Promise(function(resolve) {
+          try {
+            var s = document.createElement("script");
+            s.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js";
+            s.async = true;
+            s.onload = function() { try { s.remove(); } catch (_) {} resolve(false); };
+            s.onerror = function() { try { s.remove(); } catch (_) {} resolve(true); };
+            document.head.appendChild(s);
+          } catch (e) {
+            resolve(false);
+          }
+        });
+      }
+
+      function showAdblockOverlay() {
+        var overlay = document.createElement("div");
+        overlay.style.position = "fixed";
+        overlay.style.inset = "0";
+        overlay.style.background = "rgba(0,0,0,0.85)";
+        overlay.style.color = "#fff";
+        overlay.style.zIndex = "10000";
+        overlay.style.display = "flex";
+        overlay.style.alignItems = "center";
+        overlay.style.justifyContent = "center";
+        overlay.style.padding = "20px";
+        overlay.innerHTML = `
+          <div style="max-width:520px;">
+            <h2 style="margin-top:0;">Ad blocker detected</h2>
+            <p>
+              This application requires ads to be enabled. Please disable your ad blocker
+              for this site and refresh the page.
+            </p>
+            <ul style="line-height:1.6;">
+              <li>Disable the ad blocker extension for this domain.</li>
+              <li>Whitelist this site (or your local dev host).</li>
+              <li>After changing settings, reload the page.</li>
+            </ul>
+            <div style="margin-top:12px;">
+              <button onclick="window.location.reload()" style="padding:8px 12px;">Reload Page</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+      }
+
+      async function runAdblockChecks() {
+        var bait = checkBaitElement();
+        var net = await checkNetworkBlock();
+        var script = await checkScriptBlock();
+        if (bait || net || script) {
+          showAdblockOverlay();
+        }
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", runAdblockChecks);
+      } else {
+        runAdblockChecks();
+      }
+    })();
+  </script>
+</body>
+</html>

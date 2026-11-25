@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Musical Tiles</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    :root {
+      --bg-top: #d7f6ff;
+      --bg-bottom: #b7cbff;
+      --surface: #ffffffeb;
+      --ink: #163652;
+      --muted: #3d5d80;
+      --accent: #ff8a3d;
+      --accent-2: #2563eb;
+      --shadow: 0 14px 28px rgba(20, 64, 109, 0.14);
+      --tile-h: 130px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: "Baloo 2", "Trebuchet MS", "Comic Sans MS", sans-serif;
+      color: var(--ink);
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 10% 12%, #ffffffbf 0 13%, transparent 14%),
+        radial-gradient(circle at 90% 16%, #fff4d4bb 0 12%, transparent 13%),
+        linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+    }
+
+    .wrap {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .shell {
+      width: min(980px, 96vw);
+      margin: 12px auto;
+      padding: 12px;
+      border-radius: 22px;
+      background: var(--surface);
+      border: 2px solid #ffffffd1;
+      box-shadow: var(--shadow);
+      animation: rise .35s ease-out;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .title-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: #fff;
+      border: 2px solid #deebff;
+      box-shadow: 0 8px 14px #1d4ed81f;
+    }
+
+    .title-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 11px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 1.05rem;
+      background: linear-gradient(160deg, #3b82f6, #1d4ed8);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.05rem, 3.8vw, 1.85rem);
+      line-height: 1.1;
+    }
+
+    .hud {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pill {
+      border-radius: 999px;
+      padding: 7px 11px;
+      background: #fff;
+      border: 2px solid #deebff;
+      box-shadow: 0 8px 14px #1d4ed81f;
+      font-weight: 800;
+      color: #1f4b7a;
+      font-size: 0.9rem;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 9px 14px;
+      font-weight: 800;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .btn.primary {
+      color: #fff;
+      background: linear-gradient(180deg, var(--accent), #f97316);
+      box-shadow: 0 8px 14px #f9731636;
+    }
+
+    .btn.secondary {
+      color: #1e3a5f;
+      background: #e7eefc;
+    }
+
+    .helper {
+      margin: 0 0 12px;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .tiles {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(64px, 1fr));
+      gap: 10px;
+    }
+
+    .tile {
+      border: 0;
+      border-radius: 14px;
+      height: var(--tile-h);
+      color: #fff;
+      font-size: clamp(1rem, 3.3vw, 1.25rem);
+      font-weight: 900;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      transform: translateY(0) scale(1);
+      transition: transform .14s ease, filter .14s ease, box-shadow .2s ease;
+      box-shadow: 0 10px 16px rgba(0,0,0,0.12);
+    }
+
+    .tile:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    .tile.active {
+      filter: brightness(1.14) saturate(1.2);
+      transform: scale(1.03);
+      box-shadow: 0 0 0 3px #ffffffbb inset, 0 14px 22px rgba(0,0,0,0.16);
+    }
+
+    .t0 { background: linear-gradient(180deg, #f87171, #dc2626); }
+    .t1 { background: linear-gradient(180deg, #fb923c, #ea580c); }
+    .t2 { background: linear-gradient(180deg, #facc15, #ca8a04); }
+    .t3 { background: linear-gradient(180deg, #22c55e, #15803d); }
+    .t4 { background: linear-gradient(180deg, #38bdf8, #2563eb); }
+
+    .howto-btn {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      z-index: 1001;
+      width: 54px;
+      height: 54px;
+      border: 0;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, var(--accent-2), #1d4ed8);
+      color: #fff;
+      font-size: 1.5rem;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.2);
+      cursor: pointer;
+    }
+
+    .howto-modal,
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+      padding: 14px;
+    }
+
+    .howto-modal.open,
+    .overlay.open {
+      display: flex;
+    }
+
+    .howto-dialog,
+    .dialog {
+      width: min(390px, 92vw);
+      border-radius: 16px;
+      background: #fff;
+      border: 2px solid #dbeafe;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.16);
+      text-align: center;
+      padding: 20px 14px 14px;
+      color: #1c3f62;
+    }
+
+    .dialog-actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .ad-banner {
+      margin-top: 12px;
+      height: 60px;
+      background: #ffffffb0;
+      border-top: 1px solid #deebff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #48627e;
+      font-weight: 700;
+      border-radius: 0 0 16px 16px;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 760px) {
+      :root { --tile-h: 102px; }
+      .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 460px) {
+      :root { --tile-h: 86px; }
+      .shell {
+        width: min(100%, 96vw);
+        margin: 10px auto;
+        border-radius: 16px;
+        padding: 10px;
+      }
+      .howto-btn {
+        width: 50px;
+        height: 50px;
+        right: 12px;
+        bottom: 12px;
+      }
+    }
+  </style>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="shell">
+      <header>
+        <div class="title-wrap">
+          <span class="title-icon">🎹</span>
+          <h1>Musical Tiles</h1>
+        </div>
+        <div class="hud">
+          <div class="pill" id="round">Round: 1</div>
+          <div class="pill" id="score">Score: 0</div>
+          <button id="playSeq" class="btn secondary">Play Sequence</button>
+          <button id="startRound" class="btn primary">Start Round</button>
+        </div>
+      </header>
+
+      <p class="helper">Listen to the tune, then tap tiles in the same order.</p>
+      <div class="tiles" id="tiles" role="grid" aria-label="musical tiles"></div>
+
+      <div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+    </div>
+  </div>
+
+  <button class="howto-btn" id="howtoBtn" title="How to Play" aria-label="How to Play">?</button>
+  <div id="howtoModal" class="howto-modal" role="dialog" aria-modal="true" aria-labelledby="howtoTitle">
+    <div class="howto-dialog">
+      <h2 id="howtoTitle">How to Play</h2>
+      <div id="howtoContent">Tap Start Round, listen to the sequence, then repeat it by tapping the same tiles in order. Each round gets one note longer.</div>
+      <button id="howtoClose" class="btn primary" style="margin-top:12px;">Close</button>
+    </div>
+  </div>
+
+  <div id="modal" class="overlay" role="dialog" aria-modal="true">
+    <div class="dialog">
+      <h2 id="resultTitle">Great Job!</h2>
+      <p id="resultDesc">Ready for the next melody?</p>
+      <div class="dialog-actions">
+        <button class="btn primary" id="playAgainBtn">Play Again</button>
+        <a class="btn secondary" href="/index.html">Home</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    function getAudioCtx() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        audioCtx = new AC();
+      }
+      if (audioCtx.state === 'suspended') {
+        try { audioCtx.resume(); } catch (_) {}
+      }
+      return audioCtx;
+    }
+
+    function playTone(freq, duration = 0.2) {
+      const ac = getAudioCtx();
+      if (!ac) return;
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = 'sine';
+      o.frequency.value = freq;
+      o.connect(g);
+      g.connect(ac.destination);
+      g.gain.setValueAtTime(0.0001, ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.22, ac.currentTime + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + duration);
+      o.start(ac.currentTime);
+      o.stop(ac.currentTime + duration + 0.02);
+    }
+
+    const notes = [261.63, 293.66, 329.63, 349.23, 392.0];
+    const labels = ['C', 'D', 'E', 'F', 'G'];
+    const tiles = document.getElementById('tiles');
+    const roundEl = document.getElementById('round');
+    const scoreEl = document.getElementById('score');
+    const modal = document.getElementById('modal');
+
+    const state = {
+      sequence: [],
+      userStep: 0,
+      round: 1,
+      score: 0,
+      locked: true
+    };
+
+    function sleep(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    function setHud() {
+      roundEl.textContent = 'Round: ' + state.round;
+      scoreEl.textContent = 'Score: ' + state.score;
+    }
+
+    function createTile(freq, label, idx) {
+      const el = document.createElement('button');
+      el.className = 'tile t' + idx;
+      el.textContent = label;
+      el.setAttribute('aria-label', 'tile ' + label);
+      el.addEventListener('click', () => onTileTap(idx));
+      return el;
+    }
+
+    function flashTile(index, ms) {
+      const el = tiles.children[index];
+      if (!el) return;
+      el.classList.add('active');
+      setTimeout(() => el.classList.remove('active'), ms);
+    }
+
+    async function playSequence() {
+      state.locked = true;
+      for (let i = 0; i < state.sequence.length; i++) {
+        const idx = state.sequence[i];
+        playTone(notes[idx], 0.2);
+        flashTile(idx, 180);
+        await sleep(260);
+      }
+      state.locked = false;
+      state.userStep = 0;
+    }
+
+    function nextRound() {
+      state.sequence.push(Math.floor(Math.random() * notes.length));
+      state.round = state.sequence.length;
+      setHud();
+      playSequence();
+    }
+
+    function startGame() {
+      state.sequence = [];
+      state.userStep = 0;
+      state.round = 1;
+      state.score = 0;
+      setHud();
+      modal.classList.remove('open');
+      nextRound();
+    }
+
+    function onTileTap(index) {
+      if (state.locked) return;
+      playTone(notes[index], 0.18);
+      flashTile(index, 140);
+
+      if (index !== state.sequence[state.userStep]) {
+        state.locked = true;
+        document.getElementById('resultTitle').textContent = 'Oops! Try Again';
+        document.getElementById('resultDesc').textContent = 'You reached round ' + state.sequence.length + ' with score ' + state.score + '.';
+        modal.classList.add('open');
+        return;
+      }
+
+      state.userStep += 1;
+      if (state.userStep === state.sequence.length) {
+        state.score += 10;
+        setHud();
+        state.locked = true;
+        setTimeout(nextRound, 420);
+      }
+    }
+
+    notes.forEach((n, i) => tiles.appendChild(createTile(n, labels[i], i)));
+
+    document.getElementById('playSeq').addEventListener('click', () => {
+      if (state.sequence.length) playSequence();
+    });
+
+    document.getElementById('startRound').addEventListener('click', startGame);
+    document.getElementById('playAgainBtn').addEventListener('click', startGame);
+
+    const howtoBtn = document.getElementById('howtoBtn');
+    const howtoModal = document.getElementById('howtoModal');
+    const howtoClose = document.getElementById('howtoClose');
+    howtoBtn.addEventListener('click', () => howtoModal.classList.add('open'));
+    howtoClose.addEventListener('click', () => howtoModal.classList.remove('open'));
+    howtoModal.addEventListener('click', (e) => {
+      if (e.target === howtoModal) howtoModal.classList.remove('open');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        howtoModal.classList.remove('open');
+        modal.classList.remove('open');
+      }
+    });
+
+    startGame();
+  </script>
+
+  <div id="ageModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Age verification">
+    <div class="modal-content">
+      <h2>Are you a parent?</h2>
+      <p>Please enter your birth year to continue to parental settings.</p>
+      <input id="birthYear" type="number" placeholder="e.g. 1980" min="1900" max="2025" />
+      <div class="modal-actions">
+        <button id="ageSubmit">Confirm</button>
+        <button id="ageCancel" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <script type="module">
+    import { injectNavbar } from '/scripts/navbar-footer.js';
+    injectNavbar();
+    window.addEventListener('DOMContentLoaded', () => {
+      const parentBtn = document.getElementById('parent-btn');
+      if (parentBtn) {
+        parentBtn.addEventListener('click', function(){
+          if (typeof showParentalGate === 'function') showParentalGate();
+        });
+      }
+      const ageSubmit = document.getElementById('ageSubmit');
+      if (ageSubmit) {
+        ageSubmit.addEventListener('click', function(){
+          const year = parseInt(document.getElementById('birthYear').value || '0', 10);
+          if (isNaN(year)) return;
+          if (typeof handleParentalConfirm === 'function') handleParentalConfirm(year);
+        });
+      }
+      const ageCancel = document.getElementById('ageCancel');
+      if (ageCancel) {
+        ageCancel.addEventListener('click', function(){
+          if (typeof closeParentalModal === 'function') closeParentalModal();
+        });
+      }
+    });
+  </script>
+  <script src="/game-shell.js"></script>
+</body>
+</html>
+

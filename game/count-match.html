@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Counting Match</title>
+  <style>
+    :root{ --bg:#fbfbff; --surface:#ffffff; --accent:#22c55e; --warn:#dc2626; --muted:#6b7280; --shadow:0 10px 30px rgba(0,0,0,.08); }
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    body{background:var(--bg);color:#111}
+    .wrap{min-height:100%;display:flex;flex-direction:column}
+    header{padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+    header a{color:#2563eb;text-decoration:none;font-weight:700}
+    .hud{display:flex;gap:12px;align-items:center}
+    .pill{background:#fff;box-shadow:var(--shadow);border-radius:999px;padding:8px 12px;font-weight:800}
+    .btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+    .btn.secondary{background:#e5e7eb;color:#111}
+
+    main{flex:1;display:grid;grid-template-columns:280px 1fr;gap:16px;padding:12px}
+    @media (max-width:900px){ main{grid-template-columns:1fr;grid-auto-rows:minmax(280px,auto)} }
+    .panel{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:14px}
+    .title{margin:0 0 6px;font-size:20px}
+
+    .tray{display:flex;flex-wrap:wrap;gap:12px;align-content:flex-start;justify-content:center;min-height:240px}
+    .num{width:72px;height:72px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:#f8fafc;box-shadow:0 4px 12px rgba(34,197,94,.15);font-size:28px;font-weight:900;cursor:grab;user-select:none;touch-action:none}
+    .num.dragging{opacity:.85;transform:scale(1.05);cursor:grabbing}
+
+    .board{position:relative;min-height:420px;display:grid;grid-template-columns:repeat(2,1fr);grid-auto-rows:200px;gap:14px}
+    @media (max-width:900px){ .board{grid-template-columns:1fr;min-height:360px} }
+    .card{position:relative;border:2px dashed #cbd5e1;border-radius:14px;background:#fff}
+    .items{position:absolute;inset:0;display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start;justify-content:flex-start;padding:12px}
+    .item{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fff7ed;border:1px solid #fde68a;font-size:22px}
+    .drop{position:absolute;right:10px;bottom:10px;width:64px;height:64px;border-radius:12px;border:2px dashed #94a3b8;display:flex;align-items:center;justify-content:center;background:#f1f5f9;color:#334155;font-weight:800}
+    .card.matched{border-color:#86efac;background:#ecfeff}
+    .drop.filled{border-color:#86efac;background:#d1fae5}
+    .hint{color:var(--muted);text-align:center;margin-top:8px}
+
+    .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45)}
+    .overlay.open{display:flex}
+    .dialog{background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:16px;text-align:center;max-width:420px}
+    .ad-banner{height:60px;background:#fff;border-top:1px solid #eee;display:flex;align-items:center;justify-content:center}
+  </style>
+  <link rel="icon" href="/kiddoxy.png" type="image/png">
+  <link rel="manifest" href="/manifest.json">
+  <script defer src="/game-shell.js"></script>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a href="/index.html">← Home</a>
+      <div class="hud">
+        <div class="pill">Time: <span id="time">60s</span></div>
+        <div class="pill">Score: <span id="score">0/4</span></div>
+        <button class="btn secondary" id="btnShuffle">Shuffle</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel">
+        <h2 class="title">Numbers</h2>
+        <div id="tray" class="tray"></div>
+      </section>
+      <section class="panel">
+        <h2 class="title">Match the count</h2>
+        <div id="board" class="board"></div>
+        <div class="hint">Drag a number onto the card that matches how many items it shows.</div>
+      </section>
+    </main>
+
+    <div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+  </div>
+
+  <div id="modal" class="overlay" role="dialog" aria-modal="true">
+    <div class="dialog">
+      <h2 id="resultTitle">You Win!</h2>
+      <p id="resultDesc" class="hint">Great counting! Want to play again?</p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+        <button class="btn" id="btnPlayAgain">Play Again</button>
+        <a class="btn secondary" href="/index.html">Home</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Audio helpers ---
+    let _audioCtx=null; function getAC(){ const AC=window.AudioContext||window.webkitAudioContext; if(!_audioCtx && AC){ _audioCtx=new AC(); } return _audioCtx; }
+    function beep(freq=660,dur=0.08,type='sine',vol=0.25){ const ac=getAC(); if(!ac) return; if(ac.state==='suspended'){ try{ac.resume();}catch(_){} } const o=ac.createOscillator(),g=ac.createGain(); o.type=type; o.frequency.value=freq; const t=ac.currentTime; g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur); }
+
+    const EMOJI = ['🍎','🧁','⭐','🎈','🐥','🌼','🍪','🪁'];
+    let state = { cards:[], needed:[], matched:0, total:4, timeLeft:60, timer:null, dragging:null };
+
+    function rand(n){ return Math.floor(Math.random()*n); }
+    function pick(arr, n){ const a=[...arr]; const out=[]; for(let i=0;i<n;i++){ out.push(a.splice(rand(a.length),1)[0]); } return out; }
+
+    function initGame(){
+      const tray = document.getElementById('tray');
+      const board = document.getElementById('board');
+      tray.innerHTML=''; board.innerHTML='';
+      state.matched=0; updateScore();
+
+      // Build cards with random counts 1..9, use 4 cards
+      state.cards = [];
+      for(let i=0;i<state.total;i++){
+        const count = 1 + rand(6) + 1; // 2..7 for simplicity
+        const symbol = EMOJI[rand(EMOJI.length)];
+        const card = document.createElement('div'); card.className='card'; card.dataset.count = String(count);
+        const items = document.createElement('div'); items.className='items';
+        for(let j=0;j<count;j++){ const it=document.createElement('div'); it.className='item'; it.textContent=symbol; items.appendChild(it); }
+        const drop = document.createElement('div'); drop.className='drop'; drop.textContent='?';
+        card.appendChild(items); card.appendChild(drop);
+        board.appendChild(card);
+        state.cards.push({el:card, count});
+      }
+
+      // Numbers tray contains exactly the needed counts, shuffled
+      state.needed = state.cards.map(c=>c.count).sort(()=>Math.random()-0.5);
+      state.needed.forEach(n=>{
+        const el=document.createElement('div'); el.className='num'; el.textContent=String(n); el.dataset.value=String(n);
+        tray.appendChild(el);
+      });
+
+      enableDragging();
+      startTimer(60);
+    }
+
+    function updateScore(){ document.getElementById('score').textContent = `${state.matched}/${state.total}`; }
+
+    function startTimer(sec){
+      state.timeLeft=sec; const t=document.getElementById('time'); t.textContent=`${state.timeLeft}s`; t.style.color='#111';
+      if(state.timer) clearInterval(state.timer);
+      state.timer=setInterval(()=>{
+        state.timeLeft-=1; t.textContent=`${state.timeLeft}s`; if(state.timeLeft<=10){ t.style.color='var(--warn)'; }
+        if(state.timeLeft<=0){ clearInterval(state.timer); endGame(false); }
+      },1000);
+    }
+
+    function endGame(won){
+      if(state.timer) clearInterval(state.timer);
+      document.querySelectorAll('.num').forEach(n=>n.style.pointerEvents='none');
+      const modal=document.getElementById('modal'); modal.classList.add('open');
+      document.getElementById('resultTitle').textContent = won ? 'You Win! 🎉' : 'Time’s Up! ⏲️';
+      document.getElementById('resultDesc').textContent = won ? 'Great counting! Want to play again?' : 'Try again and count them faster!';
+        beep(won?540:240,0.10, won?'sine':'sawtooth', 0.22);
+        if(won && window.Celebration){ try{ window.Celebration.celebrate(); }catch(_){} }
+    }
+
+    function enableDragging(){
+      const nums = Array.from(document.querySelectorAll('.num'));
+      nums.forEach(el=>{
+        let startX=0,startY=0,drag=false,prevParent=null;
+        el.addEventListener('pointerdown',(e)=>{
+          el.setPointerCapture(e.pointerId); drag=true; prevParent=el.parentElement;
+          const r=el.getBoundingClientRect(); startX=e.clientX-r.left; startY=e.clientY-r.top;
+          el.classList.add('dragging'); el.style.position='fixed'; el.style.left=`${r.left}px`; el.style.top=`${r.top}px`; el.style.zIndex=1000; beep(720,0.08,'triangle',0.22);
+        });
+        el.addEventListener('pointermove',(e)=>{ if(!drag) return; el.style.left=`${e.clientX-startX}px`; el.style.top=`${e.clientY-startY}px`; });
+        el.addEventListener('pointerup',(e)=>{
+          if(!drag) return; drag=false; el.classList.remove('dragging'); el.style.pointerEvents='none';
+          const drop=document.elementFromPoint(e.clientX,e.clientY); const card=drop && drop.closest && drop.closest('.card'); el.style.pointerEvents='';
+          try{ el.releasePointerCapture && el.releasePointerCapture(e.pointerId);}catch(_){ }
+          if(card && !card.classList.contains('matched')){
+            const need = parseInt(card.dataset.count||'0',10); const val = parseInt(el.dataset.value||'0',10);
+            if(need===val){
+              const d=card.querySelector('.drop'); d.textContent=String(val); d.classList.add('filled'); card.classList.add('matched');
+              el.remove(); state.matched+=1; updateScore(); beep(540,0.09,'sine',0.26);
+              if(state.matched===state.total) endGame(true);
+            }else{
+              // return to tray
+              el.style.position=''; el.style.left=''; el.style.top=''; el.style.zIndex=''; prevParent && prevParent.appendChild(el); beep(240,0.07,'sawtooth',0.18);
+            }
+          }else{
+            el.style.position=''; el.style.left=''; el.style.top=''; el.style.zIndex=''; prevParent && prevParent.appendChild(el);
+          }
+        });
+      });
+    }
+
+    function restart(){ document.getElementById('modal').classList.remove('open'); initGame(); }
+
+    window.addEventListener('DOMContentLoaded', ()=>{
+      initGame();
+      document.getElementById('btnShuffle').addEventListener('click', initGame);
+      document.getElementById('btnPlayAgain').addEventListener('click', restart);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Connect the Dots</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    :root{--bg-top:#1e40af;--bg-mid:#1d4ed8;--bg-bottom:#0f172a;--surface:#ffffffe8;--ink:#0f172a;--muted:#334155;--accent:#60a5fa;--ok:#22c55e;--warn:#ef4444;--panel:#ffffffe8;--dot-size:42px}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:"Baloo 2","Comic Sans MS","Trebuchet MS",sans-serif;background:radial-gradient(circle at 12% 14%, #fef3c766 0 10%, transparent 11%),radial-gradient(circle at 88% 8%, #dbeafe66 0 11%, transparent 12%),linear-gradient(180deg,var(--bg-top) 0%,var(--bg-mid) 58%,var(--bg-bottom) 100%);color:var(--ink);padding-bottom:92px}
+    .wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center}
+    .shell{width:min(560px,96vw);margin:12px auto;border-radius:24px;padding:12px;border:3px solid #ffffffc2;background:var(--panel);box-shadow:0 18px 34px #0f172a66;backdrop-filter:blur(3px)}
+    header{padding:6px 2px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .title-wrap{display:inline-flex;align-items:center;gap:10px;background:#ffffffeb;border:2px solid #d8eaff;border-radius:999px;padding:8px 12px;box-shadow:0 8px 14px #2563eb2e}
+    .title-icon{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(150deg,#3b82f6,#1d4ed8);color:#fff;font-size:1.2rem}
+    h1{font-size:clamp(1.05rem,3.8vw,1.8rem);margin:0;font-weight:800;line-height:1.1}
+    .helper{margin:0 0 10px;text-align:center;color:#1e3a8a;font-weight:700}
+    .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .btn{border:0;padding:10px 12px;min-height:44px;border-radius:12px;color:#fff;font-family:inherit;font-weight:800;cursor:pointer;letter-spacing:.2px}
+    #shuffleBtn{background:linear-gradient(180deg,#2563eb,#1e40af);box-shadow:0 7px 12px #1d4ed853}
+    #restartBtn{background:linear-gradient(180deg,#ff7a59,#e85f3d);box-shadow:0 7px 12px #fb71855a}
+    .mode-row{display:flex;gap:8px;overflow:auto;padding:8px 2px 10px}
+    .mode-btn{border:2px solid #d7e8ff;background:#fff;border-radius:999px;padding:7px 12px;white-space:nowrap;font-family:inherit;font-weight:800;color:#1f4b78;cursor:pointer}
+    .mode-btn.active{border-color:#1d4ed8;color:#1d4ed8;box-shadow:0 0 0 3px #1d4ed82b}
+    main{flex:1;display:flex;align-items:center;justify-content:center;padding:0}
+    .board{width:100%;max-width:960px;height:clamp(360px,62vh,720px);background:linear-gradient(180deg,#fff,#f7fbff);border-radius:18px;box-shadow:0 12px 28px rgba(2,6,23,0.08);position:relative;overflow:hidden;border:3px solid #fff}
+    .board::before,.board::after{content:"";position:absolute;border-radius:50%;background:#ffffffcc;opacity:.65;pointer-events:none}
+    .board::before{width:120px;height:54px;top:14px;left:16px}
+    .board::after{width:142px;height:58px;top:20px;right:18px}
+    canvas{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+    .dot{position:absolute;width:var(--dot-size);height:var(--dot-size);border-radius:50%;background:linear-gradient(160deg,#3b82f6,#1d4ed8);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.95rem;box-shadow:0 8px 16px rgba(2,6,23,0.12);user-select:none;touch-action:none;border:3px solid #fff}
+    .dot.locked{background:linear-gradient(160deg,#6ee7b7,#10b981);color:#083b2e}
+    .hint{position:absolute;left:10px;top:10px;color:var(--muted);font-size:14px;font-weight:700;background:#ffffffd9;border:1px solid #d7e8ff;border-radius:10px;padding:6px 10px}
+    .status-row{position:absolute;right:10px;top:10px;display:flex;gap:8px}
+    .pill{background:#ffffffde;border:1px solid #d7e8ff;border-radius:999px;padding:6px 10px;font-size:13px;font-weight:800;color:#1f4b78}
+    .cele{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:200;background:#082e5063;padding:14px}
+    .cele.show{display:flex}
+    .cele .card{background:#fffffffc;padding:20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.12);text-align:center;border:2px solid #d7eaff}
+    .ad-banner{height:54px;background:#fff;border-top:1px solid #eee;display:flex;align-items:center;justify-content:center}
+    .fixed-controls{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;background:linear-gradient(180deg,rgba(30,64,175,0),rgba(30,64,175,0.96));backdrop-filter:blur(4px)}
+    .fixed-controls .btn{width:100%}
+
+    .howto-btn{position:fixed;bottom:16px;right:16px;z-index:1001;background:linear-gradient(180deg,#2563eb,#1e40af);color:#fff;border:none;border-radius:50%;width:54px;height:54px;box-shadow:0 6px 14px rgba(0,0,0,0.18);font-size:1.5rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .howto-modal{position:fixed;inset:0;z-index:1002;background:rgba(0,0,0,0.32);display:none;align-items:center;justify-content:center;padding:14px}
+    .howto-modal.open{display:flex}
+    .howto-dialog{background:#fff;border-radius:16px;max-width:90vw;width:340px;padding:24px 18px 18px;box-shadow:0 8px 32px rgba(0,0,0,0.18);text-align:center;position:relative;border:2px solid #d7eaff}
+    .howto-close{position:absolute;top:10px;right:10px;background:none;border:none;font-size:22px;color:#888;cursor:pointer}
+    .howto-content{font-size:16px;color:#222;margin-top:10px}
+
+    @media(max-width:760px){
+      .shell{padding:10px;border-radius:18px}
+      .controls{width:100%;display:grid;grid-template-columns:1fr 1fr}
+      .btn{width:100%}
+      .board{height:min(58vh,520px)}
+      .hint{max-width:60%;font-size:13px}
+      .status-row{position:static;margin:10px 10px 0;display:flex;justify-content:flex-end}
+      :root{--dot-size:38px}
+    }
+    @media(max-width:420px){
+      .shell{width:min(100%,96vw);margin:10px auto}
+      .title-icon{width:34px;height:34px;font-size:1rem}
+      .board{height:min(54vh,420px)}
+      .hint{left:8px;top:8px;font-size:12px;padding:5px 8px}
+      :root{--dot-size:32px}
+      .howto-btn{width:50px;height:50px;right:12px;bottom:12px}
+      .fixed-controls{grid-template-columns:1fr}
+    }
+  </style>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="shell">
+    <header>
+      <div class="title-wrap">
+        <span class="title-icon">🧩</span>
+        <h1>Connect the Dots</h1>
+      </div>
+      <div class="controls">
+        <button id="shuffleBtn" class="btn">Shuffle</button>
+        <button id="restartBtn" class="btn">Restart</button>
+      </div>
+    </header>
+
+    <p class="helper">Connect numbers in order to reveal a cosmic shape.</p>
+
+    <div class="mode-row" id="modeRow" aria-label="Pattern modes">
+      <button class="mode-btn active" data-mode="star">⭐ Star</button>
+      <button class="mode-btn" data-mode="rocket">🚀 Rocket</button>
+      <button class="mode-btn" data-mode="fish">🐟 Fish</button>
+      <button class="mode-btn" data-mode="heart">💖 Heart</button>
+    </div>
+
+    <main>
+      <div class="board" id="board">
+        <canvas id="canvas"></canvas>
+        <div class="hint" id="hint">Connect the dots in order: 1 → 2 → 3 ...</div>
+        <div class="status-row">
+          <div class="pill" id="nextPill">Next: 1</div>
+          <div class="pill" id="progressPill">0/9</div>
+        </div>
+      </div>
+    </main>
+    </div>
+
+    <div class="fixed-controls">
+      <button id="shuffleBtnFixed" class="btn">Shuffle</button>
+      <button id="restartBtnFixed" class="btn">Restart</button>
+    </div>
+
+    <div class="ad-banner" aria-hidden="true">AD_BANNER_PLACEHOLDER</div>
+
+    <div id="cele" class="cele"><div class="card"><h2>Nice! 🎉</h2><p>You completed the picture.</p></div></div>
+  </div>
+
+<script>
+(function(){
+  const board = document.getElementById('board');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const shuffleBtn = document.getElementById('shuffleBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const cele = document.getElementById('cele');
+  const hint = document.getElementById('hint');
+  const nextPill = document.getElementById('nextPill');
+  const progressPill = document.getElementById('progressPill');
+  const modeRow = document.getElementById('modeRow');
+
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  const audioCtx = AudioContext ? new AudioContext() : null;
+  function tone(freq,d=0.08){ if(!audioCtx) return; const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.type='sine'; o.frequency.value=freq; g.gain.value=0.06; o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + d); }
+
+  let dots = []; // {x,y,el,index}
+  let order = [];
+  let expected = 0; // next index to connect (0-based)
+  let isDrawing = false;
+  let tempPos = null;
+  let currentMode = 'star';
+
+  const MODE_POSITIONS = {
+    star:[
+      {x:0.5,y:0.07},{x:0.6,y:0.34},{x:0.9,y:0.34},{x:0.66,y:0.54},{x:0.75,y:0.88},
+      {x:0.5,y:0.66},{x:0.25,y:0.88},{x:0.34,y:0.54},{x:0.1,y:0.34},{x:0.4,y:0.34}
+    ],
+    rocket:[
+      {x:0.5,y:0.09},{x:0.62,y:0.2},{x:0.68,y:0.36},{x:0.68,y:0.58},{x:0.82,y:0.76},
+      {x:0.61,y:0.68},{x:0.56,y:0.86},{x:0.5,y:0.92},{x:0.44,y:0.86},{x:0.39,y:0.68},
+      {x:0.18,y:0.76},{x:0.32,y:0.58},{x:0.32,y:0.36},{x:0.38,y:0.2}
+    ],
+    fish:[
+      {x:0.15,y:0.5},{x:0.26,y:0.32},{x:0.46,y:0.24},{x:0.65,y:0.28},{x:0.8,y:0.44},
+      {x:0.9,y:0.42},{x:0.86,y:0.5},{x:0.9,y:0.58},{x:0.8,y:0.56},{x:0.65,y:0.72},
+      {x:0.46,y:0.76},{x:0.26,y:0.68}
+    ],
+    heart:[
+      {x:0.5,y:0.2},{x:0.4,y:0.12},{x:0.28,y:0.12},{x:0.18,y:0.22},{x:0.18,y:0.36},
+      {x:0.28,y:0.48},{x:0.5,y:0.72},{x:0.72,y:0.48},{x:0.82,y:0.36},{x:0.82,y:0.22},
+      {x:0.72,y:0.12},{x:0.6,y:0.12}
+    ]
+  };
+
+  function dotSize(){
+    const styleSize = getComputedStyle(document.documentElement).getPropertyValue('--dot-size');
+    const parsed = parseFloat(styleSize);
+    return Number.isFinite(parsed) ? parsed : 48;
+  }
+
+  function applyAdaptiveDotSize(count){
+    const r = board.getBoundingClientRect();
+    const minSide = Math.max(240, Math.min(r.width || 0, r.height || 0));
+    const density = count >= 14 ? 8.6 : (count >= 12 ? 8 : 7.2);
+    let size = Math.round(minSide / density);
+    size = Math.max(28, Math.min(42, size));
+    if (window.innerWidth <= 420) size = Math.min(size, 32);
+    else if (window.innerWidth <= 760) size = Math.min(size, 38);
+    document.documentElement.style.setProperty('--dot-size', size + 'px');
+    return size;
+  }
+
+  function updateStatus(){
+    if(nextPill) nextPill.textContent = 'Next: ' + Math.min(order.length, expected + 1);
+    if(progressPill) progressPill.textContent = expected + '/' + Math.max(0, order.length - 1);
+  }
+
+  function resize(){ const r = board.getBoundingClientRect(); applyAdaptiveDotSize(order.length || (MODE_POSITIONS[currentMode] || []).length || 10); const ratio = window.devicePixelRatio||1; canvas.width = Math.floor(r.width*ratio); canvas.height = Math.floor(r.height*ratio); canvas.style.width = r.width+'px'; canvas.style.height = r.height+'px'; ctx.setTransform(ratio,0,0,ratio,0,0); layoutDots(); redraw(); }
+
+  function layoutDots(){
+    const r = board.getBoundingClientRect();
+    const size = applyAdaptiveDotSize(order.length || 10);
+    dots.forEach((d)=>{
+      const px = Math.round(d.nx * (r.width - size));
+      const py = Math.round(d.ny * (r.height - size));
+      d.el.style.width = size + 'px';
+      d.el.style.height = size + 'px';
+      d.el.style.fontSize = Math.max(12, Math.round(size * 0.33)) + 'px';
+      d.el.style.left = px + 'px';
+      d.el.style.top = py + 'px';
+      d.x = px + size / 2;
+      d.y = py + size / 2;
+    });
+  }
+
+  function placeDots(seedPositions){ // seedPositions: array of normalized positions [{x:0.1,y:0.2},...]
+    // clear existing
+    dots.forEach(d=>d.el.remove()); dots=[]; order=[]; expected=0; cele.classList.remove('show'); ctx.clearRect(0,0,canvas.width,canvas.height);
+    const r = board.getBoundingClientRect();
+    const size = applyAdaptiveDotSize(seedPositions.length);
+    seedPositions.forEach((p,i)=>{
+      const el = document.createElement('div'); el.className='dot'; el.textContent = (i+1);
+      el.style.left = Math.round(p.x * (r.width - size)) + 'px'; el.style.top = Math.round(p.y * (r.height - size)) + 'px'; el.dataset.index = i; board.appendChild(el);
+      dots.push({nx:p.x, ny:p.y, x: p.x * r.width + size / 2, y: p.y * r.height + size / 2, el: el, index: i});
+      order.push(i);
+    });
+    // set handlers
+    dots.forEach(d=>{
+      d.el.addEventListener('pointerdown', onDotDown);
+    });
+    layoutDots();
+    redraw();
+    updateStatus();
+  }
+
+  function redraw(){ // draw existing connected lines
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.lineWidth = 6; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.strokeStyle = '#2563eb';
+    ctx.beginPath();
+    // draw lines for connected dots (expected gives count)
+    for(let i=0;i<expected;i++){
+      const a = dots[ order[i] ];
+      const b = dots[ order[i+1] ];
+      if(!a) continue;
+      ctx.moveTo(a.x, a.y);
+      if(i+1 <= expected) ctx.lineTo(b ? b.x : a.x, b ? b.y : a.y);
+    }
+    ctx.stroke();
+    // draw temporary line while drawing
+    if(isDrawing && tempPos && expected>0){ const last = dots[ order[expected-1] ]; if(last){ ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(tempPos.x,tempPos.y); ctx.stroke(); }}
+    // update dot locked state
+    dots.forEach((d,idx)=>{ if(idx < expected) d.el.classList.add('locked'); else d.el.classList.remove('locked'); });
+    updateStatus();
+  }
+
+  function onDotDown(ev){ ev.preventDefault(); const el = ev.currentTarget; const idx = parseInt(el.dataset.index,10);
+    if(idx !== order[expected]){ // tapping wrong dot: brief sound and flash
+      tone(220,0.12); el.animate([{transform:'scale(1)'},{transform:'scale(1.08)'},{transform:'scale(1)'}],{duration:240}); return; }
+    // correct starting dot? if expected==0 allow pressing first; else if it's the next, allow connection
+    // start drawing
+    isDrawing = true; tempPos = {x: ev.clientX - board.getBoundingClientRect().left, y: ev.clientY - board.getBoundingClientRect().top};
+    // attach move/up to document to track pointer
+    function moveHandler(e){ tempPos = {x: e.clientX - board.getBoundingClientRect().left, y: e.clientY - board.getBoundingClientRect().top}; redraw(); }
+    function upHandler(e){ document.removeEventListener('pointermove', moveHandler); document.removeEventListener('pointerup', upHandler); isDrawing=false; tempPos=null;
+      // detect if released over the next dot
+      const r = board.getBoundingClientRect(); const x = e.clientX - r.left; const y = e.clientY - r.top;
+      const nextIndex = order[expected+1];
+        if(nextIndex!==undefined){ const target = dots[nextIndex]; const dx = x - target.x; const dy = y - target.y; const dist = Math.sqrt(dx*dx+dy*dy);
+          if(dist < dotSize() * 0.72){ // success
+            expected++; tone(880,0.08); redraw(); if(expected >= order.length-1){ // completed
+                // final connect produced; show celebration
+                setTimeout(()=>{ cele.classList.add('show'); for(let i=0;i<12;i++){ const c=document.createElement('div'); c.style.position='fixed'; c.style.left=(10+Math.random()*80)+'%'; c.style.top=(10+Math.random()*60)+'%'; c.style.width='10px'; c.style.height='12px'; c.style.background = ['#ff5c8a','#ffd166','#8bd3ff','#7bf1a8'][i%4]; c.style.borderRadius='2px'; c.style.zIndex=300; c.style.opacity=0.95; c.style.transform='translateY(0)'; c.style.transition='top 1400ms ease, opacity 1400ms'; document.body.appendChild(c); setTimeout(()=>{ c.style.top = (80+Math.random()*20)+'%'; c.style.opacity = 0; },50); setTimeout(()=>c.remove(),1500); }
+                  tone(880,0.3); },300);
+            }
+            return;
+          }
+      }
+      // otherwise wrong release - brief feedback
+      tone(220,0.12);
+      redraw();
+    }
+    document.addEventListener('pointermove', moveHandler);
+    document.addEventListener('pointerup', upHandler);
+  }
+
+  function makePositions(mode, jitter=0.015){
+    const base = MODE_POSITIONS[mode] || MODE_POSITIONS.star;
+    return base.map((p)=>{
+      let x = p.x + (Math.random()*2-1)*jitter;
+      let y = p.y + (Math.random()*2-1)*jitter;
+      x = Math.max(0.07, Math.min(0.93, x));
+      y = Math.max(0.07, Math.min(0.93, y));
+      return {x,y};
+    });
+  }
+
+  function modeLabel(mode){
+    return ({star:'star', rocket:'rocket', fish:'fish', heart:'heart'})[mode] || 'shape';
+  }
+
+  function initGame(){ const pos = makePositions(currentMode,0.018); placeDots(pos); hint.textContent = 'Connect all dots to reveal the ' + modeLabel(currentMode) + '!'; redraw(); }
+
+  shuffleBtn.addEventListener('click', ()=>{ initGame(); tone(660,0.08); });
+  restartBtn.addEventListener('click', ()=>{ // reset connections but keep positions
+    expected = 0; cele.classList.remove('show'); redraw(); tone(440,0.08);
+  });
+
+  if(modeRow){
+    modeRow.addEventListener('click', (e)=>{
+      const btn = e.target.closest('.mode-btn');
+      if(!btn) return;
+      modeRow.querySelectorAll('.mode-btn').forEach((b)=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentMode = btn.dataset.mode || 'star';
+      initGame();
+      tone(720,0.08);
+    });
+  }
+
+  // initial sizing and game start
+  function onResize(){ resize(); }
+  window.addEventListener('resize', onResize);
+  initGame();
+
+  // expose for debugging
+  window.__connectDots = { reset: ()=>{ expected=0; redraw(); }, shuffle: initGame };
+})();
+</script>
+<script>
+document.getElementById('shuffleBtnFixed').addEventListener('click', function(){
+  document.getElementById('shuffleBtn').click();
+});
+document.getElementById('restartBtnFixed').addEventListener('click', function(){
+  document.getElementById('restartBtn').click();
+});
+</script>
+
+
+<!-- How to Play Button and Modal -->
+<button class="howto-btn" id="howtoBtn" title="How to Play" aria-label="How to Play">?</button>
+<div id="howtoModal" class="howto-modal">
+  <div class="howto-dialog">
+    <button id="howtoClose" class="howto-close" aria-label="Close">&times;</button>
+    <h2 id="howtoTitle">How to Play</h2>
+    <div id="howtoContent" class="howto-content">
+      Connect the dots in order by dragging from one to the next. Start at 1 and follow the sequence to complete the picture. If you tap the wrong dot, you'll get a hint sound. Complete all connections to celebrate!
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var btn = document.getElementById('howtoBtn');
+  var modal = document.getElementById('howtoModal');
+  var close = document.getElementById('howtoClose');
+  btn.addEventListener('click', function() { modal.classList.add('open'); });
+  close.addEventListener('click', function() { modal.classList.remove('open'); });
+  modal.addEventListener('click', function(e) { if(e.target === modal) modal.classList.remove('open'); });
+});
+</script>
+<div id="ageModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Age verification">
+    <div class="modal-content">
+      <h2>Are you a parent?</h2>
+      <p>Please enter your birth year to continue to parental settings.</p>
+      <input id="birthYear" type="number" placeholder="e.g. 1980" min="1900" max="2025" />
+      <div class="modal-actions">
+        <button id="ageSubmit">Confirm</button>
+        <button id="ageCancel" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <script type="module">
+    import { injectNavbar } from '/scripts/navbar-footer.js';
+    injectNavbar();
+    // Wire up parental modal logic after navbar injection
+    window.addEventListener('DOMContentLoaded', () => {
+      var parentBtn = document.getElementById('parent-btn');
+      if (parentBtn) {
+        parentBtn.addEventListener('click', function(){
+          if (typeof showParentalGate === 'function') showParentalGate();
+        });
+      }
+      var ageSubmit = document.getElementById('ageSubmit');
+      if (ageSubmit) {
+        ageSubmit.addEventListener('click', function(){
+          const year = parseInt(document.getElementById('birthYear').value || '0', 10);
+          if (isNaN(year)) return;
+          if (typeof handleParentalConfirm === 'function') handleParentalConfirm(year);
+        });
+      }
+      var ageCancel = document.getElementById('ageCancel');
+      if (ageCancel) {
+        ageCancel.addEventListener('click', function(){
+          if (typeof closeParentalModal === 'function') closeParentalModal();
+        });
+      }
+    });
+  </script>
+  <script src="/game-shell.js"></script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+:root{
+  --bg: #FFFDF5;
+  --card: #FFEEAD;
+  --accent: #FF7F50;
+  --muted: #6b7280;
+  --brand: #3B82F6;
+}
+html,body{height:100%;margin:0;font-family: 'Nunito', system-ui, Arial, sans-serif;background:var(--bg);color:#111}
+.site-header{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:linear-gradient(90deg,#fff 0,#fff0 100%);box-shadow:0 1px 0 rgba(0,0,0,0.06)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-logo{width:48px;height:48px;object-fit:contain;border-radius:8px}
+.brand-text{font-weight:800;color:var(--brand);font-size:20px}
+.small-btn{padding:8px 12px;border-radius:8px;border:none;background:#e2e8f0;cursor:pointer}
+.hero{padding:18px;text-align:center}
+.hero h1{margin:0 0 8px;font-size:22px}
+#gamesGrid{display:flex;flex-direction:column;gap:18px;padding:12px}
+.category-section{display:flex;flex-direction:column;gap:10px}
+.category-header{padding:0 2px}
+.category-title{margin:0;font-size:18px;color:#0f172a}
+.category-desc{margin:4px 0 0;color:var(--muted);font-size:13px}
+.category-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.game-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;border-radius:12px;background:var(--card);text-decoration:none;color:inherit;box-shadow:0 6px 14px rgba(59,130,246,0.08);min-height:120px}
+.tile-icon{width:64px;height:64px;object-fit:contain;margin-bottom:8px}
+.tile-title{font-weight:700}
+.ad-banner{height:60px;background:linear-gradient(90deg,#fff,#fafafa);border-top:1px solid #eee;display:flex;align-items:center;justify-content:center}
+.site-footer{padding:12px;text-align:center;color:var(--muted)}
+/* modal */
+.modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center}
+.modal.hidden{display:none}
+.modal-content{background:white;padding:18px;border-radius:10px;min-width:300px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+button{background:var(--accent);color:white;padding:10px 16px;border-radius:10px;border:none;font-weight:700}
+button.secondary{background:#e2e8f0;color:#111}
+
+/* responsive tweaks */
+@media (max-width:420px){
+  .category-grid{grid-template-columns:repeat(2,1fr)}
+}
+
+/* tiles: hover + NEW badge */
+.game-tile{position:relative;transition:transform .12s ease, box-shadow .12s ease}
+.game-tile:hover,.game-tile:focus-visible{transform:translateY(-3px);box-shadow:0 10px 22px rgba(59,130,246,0.18)}
+.tile-badge{position:absolute;top:8px;right:8px;background:#ef4444;color:#fff;font-size:11px;font-weight:900;padding:3px 7px;border-radius:999px;letter-spacing:.5px}
+.tile-title,.tile-desc{text-align:center}
+
+/* injected dark footer (navbar-footer.js) */
+.dark-footer{background:#151a23;color:#cbd5e1;text-align:left;padding:28px 0 0;margin-top:24px}
+.footer-main{display:flex;flex-wrap:wrap;gap:28px;justify-content:space-between;max-width:1100px;margin:0 auto;padding:0 24px 20px}
+.footer-col{display:flex;flex-direction:column;gap:8px;min-width:140px}
+.footer-col a{color:#cbd5e1;text-decoration:none}
+.footer-col a:hover{color:#fff;text-decoration:underline}
+.footer-col-title{font-weight:800;color:#fff;margin-bottom:4px}
+.footer-logo-row{display:flex;align-items:center;gap:10px}
+.footer-logo{width:40px;height:40px;border-radius:8px}
+.footer-brand{font-weight:900;font-size:20px;color:#fff}
+.footer-tagline{color:#94a3b8}
+.footer-social-row{display:flex;gap:10px;margin-top:6px}
+@media (max-width:520px){.footer-main{flex-direction:column;gap:18px}}
+
+/* game finder */
+.finder{max-width:900px;margin:0 auto;padding:0 12px}
+#gameSearch{width:100%;box-sizing:border-box;font-size:17px;padding:14px 16px;border-radius:14px;border:2px solid #e2e8f0;background:#fff;outline:none}
+#gameSearch:focus{border-color:var(--brand)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+.chip{background:#fff;color:#334155;border:2px solid #e2e8f0;padding:7px 12px;border-radius:999px;font-weight:800;font-size:14px;cursor:pointer}
+.chip.active{background:var(--brand);border-color:var(--brand);color:#fff}
+.show-more{align-self:center;background:#fff;color:var(--brand);border:2px solid #bfdbfe;margin-top:4px}
+.no-results{text-align:center;color:var(--muted);font-size:18px;padding:30px}

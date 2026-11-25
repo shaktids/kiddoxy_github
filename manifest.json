@@ -1,0 +1,13 @@
+{
+  "name": "Kiddoxy",
+  "short_name": "Kiddoxy",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#FFFDF5",
+  "theme_color": "#3B82F6",
+  "description": "Fun, safe games for kids.",
+  "icons": [
+    {"src":"/kiddoxy.png","sizes":"192x192","type":"image/png"},
+    {"src":"/kiddoxy.png","sizes":"512x512","type":"image/png"}
+  ]
+}

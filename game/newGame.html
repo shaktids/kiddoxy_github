@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Alphabet Matching Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="stylesheet" href="/styles.css">
+
+  <style>
+    /* predictable sizing */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root{
+      --bg: #f9f9ff;
+      --card: #87CEFA;
+      --matched: #32CD32;
+      --accent: #FF8C42;
+      --text: #111827;
+      --card-min: 84px; /* minimum card size; JS may reduce this when many boxes are requested */
+      --safe-padding: env(safe-area-inset-bottom, 12px);
+    }
+
+    /* Make the entire document a column flex layout so the game can expand to fill the viewport */
+    html, body {
+      height: 100vh; /* ensure viewport-filling layout */
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      -webkit-touch-callout: none; /* disable callout on iOS */
+      -webkit-user-select: none;
+      user-select: none;
+      -ms-touch-action: manipulation;
+      touch-action: manipulation;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header{padding:12px 16px;text-align:center}
+    h1{margin:0;font-size:20px}
+    p{margin:6px 0 12px;color:#333}
+
+    /* The game board grows to fill available vertical space between header and controls */
+    .game-board{
+      display:grid;
+      gap:10px;
+      justify-content:center;
+      padding:10px 12px 110px; /* bottom padding to keep controls visible */
+      /* auto-fit columns with minimum card size suitable for touch; width fills viewport on mobile */
+      grid-template-columns: repeat(auto-fit, minmax(var(--card-min,84px), 1fr));
+      width: 100%;
+      max-width: 100%;
+      margin: 0; /* fill full width so alignment is consistent on mobile */
+      flex: 1 1 auto; /* allow the board to expand */
+      min-height: 0; /* allow the board to shrink and scroll inside flex layout */
+      align-content: center; /* center grid cells vertically when there's extra space */
+      overflow-y: auto; /* allow scrolling on very small screens */
+      -webkit-overflow-scrolling: touch;
+      justify-items: center;
+    }
+
+    /* Card: size adapts to available column width, but keep comfortable tap area */
+    .card{
+      aspect-ratio: 1/1;
+      background: var(--card);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size: clamp(18px, 3.8vw, 36px);
+      color:white;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:800;
+      -webkit-tap-highlight-color: rgba(0,0,0,0.12);
+      user-select:none;
+      transition: transform 160ms ease, box-shadow 160ms ease;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.06);
+      min-width:var(--card-min,84px);min-height:var(--card-min,84px);
+      text-align:center; /* ensure emojis and symbols are centered */
+      line-height:1; /* avoid vertical misalignment */
+      padding: 6px; /* small inner padding for symbols */
+    }
+
+    /* compact mode reduces font-size slightly to fit more tiles visibly */
+    body.compact .card{ font-size: clamp(16px, 3.2vw, 28px); }
+
+    .card:active{transform: translateY(2px) scale(0.995)}
+
+    .matched{background:var(--matched);cursor:default}
+
+    .hidden{color:transparent}
+
+    /* Controls sit fixed at the bottom for Android convenience */
+    .controls{
+      position:fixed;left:0;right:0;bottom:0;padding:12px 16px;padding-bottom:calc(var(--safe-padding) + 12px);background:linear-gradient(180deg, rgba(255,255,255,0.0), rgba(255,255,255,0.96));display:flex;gap:10px;justify-content:center;backdrop-filter: blur(4px);
+      z-index:60;
+    }
+
+    .controls button{flex:1;padding:12px;border-radius:12px;border:none;font-weight:800;background:var(--accent);color:white;font-size:16px}
+
+    .controls a{flex:1;text-decoration:none;text-align:center;line-height:36px;padding:12px;border-radius:12px;background:#e6eefc;color:#123}
+
+    /* Fullscreen-friendly intro overlay */
+    .intro-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg, rgba(59,130,246,0.06), rgba(255,255,255,0.6));z-index:70}
+    .intro-card{background:white;padding:20px;border-radius:16px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.12);max-width:420px;margin:16px}
+    .play-btn{display:inline-block;background:var(--accent);color:white;padding:14px 22px;border-radius:14px;font-weight:900;font-size:18px;border:none}
+
+    .intro-row{display:flex;gap:8px;align-items:center;justify-content:center;margin:10px 0}
+    .intro-row select,.intro-row input{padding:8px;border-radius:8px;border:1px solid #e5e7eb}
+
+    /* When playing (e.g., fullscreen requested), hide header to let the game truly fill the screen */
+    body.playing header{display:none}
+
+    /* Slightly reduce top padding of the board when playing so content uses full area */
+    body.playing .game-board{padding-top:12px}
+
+    /* Celebration overlay */
+    .celebration-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:120;pointer-events:none}
+    .celebration-overlay.show{display:flex;pointer-events:auto}
+    .celebration-card{position:relative;background:transparent;border-radius:12px;text-align:center;padding:8px}
+    .celebration-title{font-size:28px;color:#0b78d1;font-weight:900;text-shadow:0 2px 6px rgba(0,0,0,0.18);margin-bottom:8px}
+    .balloon{position:absolute;width:48px;height:64px;border-radius:50% 50% 45% 45%;opacity:0.95;transform-origin:center bottom}
+    .balloon::after{content:'';position:absolute;left:50%;bottom:-10px;width:2px;height:20px;background:rgba(0,0,0,0.06);transform:translateX(-50%)}
+    @keyframes floatUp{0%{transform:translateY(30vh) scale(0.9);opacity:0}30%{opacity:1}100%{transform:translateY(-110vh) scale(1);opacity:1}}
+    .balloon.animate{animation:floatUp 3.6s linear forwards}
+
+    /* small confetti pieces */
+    .confetti{position:fixed;left:0;right:0;top:0;bottom:0;pointer-events:none;overflow:hidden}
+    .confetti-piece{position:absolute;width:10px;height:14px;opacity:0.95;transform-origin:center;animation:confetti-fall 2500ms linear forwards}
+    @keyframes confetti-fall{0%{transform:translateY(-10vh) rotate(0deg)}100%{transform:translateY(110vh) rotate(720deg);opacity:1}}
+
+    /* small screens adjustments */
+    @media (max-width:420px){
+      h1{font-size:18px}
+      .controls{padding-left:10px;padding-right:10px}
+      .intro-card{padding:16px}
+      .play-btn{width:100%}
+      .intro-row{flex-direction:column}
+      .game-board{grid-template-columns: repeat(4, minmax(var(--card-min,56px), 1fr)); gap:8px}
+    }
+  </style>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>Alphabet Matching Game</h1>
+  <p>Tap tiles to reveal and match items</p>
+</header>
+
+<!-- Intro overlay with large Play button and mode controls -->
+<div id="intro" class="intro-overlay">
+  <div class="intro-card">
+    <h2 style="margin-top:0">Ready to play?</h2>
+    <p style="color:#444">Choose a set and number of pairs (20 boxes = 10 pairs recommended).</p>
+
+    <div class="intro-row">
+      <label for="modeSelect">Set:</label>
+      <select id="modeSelect" aria-label="Select symbol set">
+        <option value="alpha">Upper/Lower Letters</option>
+        <option value="numbers">Numbers</option>
+        <option value="emoji">Emoji</option>
+        <option value="symbols">Shapes</option>
+      </select>
+
+      <label for="pairCount">Pairs:</label>
+      <input id="pairCount" type="number" min="2" max="20" value="10" style="width:72px" aria-label="Number of pairs">
+    </div>
+
+    <button id="playBtn" class="play-btn">Play</button>
+  </div>
+</div>
+
+<div id="game" class="game-board" aria-live="polite"></div>
+
+
+<div class="controls" role="toolbar" aria-label="Game controls">
+  <button id="restartBtn">Restart</button>
+</div>
+
+<!-- celebration overlay -->
+<div id="celebration" class="celebration-overlay" aria-hidden="true">
+  <div class="celebration-card">
+    <div class="celebration-title">Hooray! You did it! 🎉</div>
+    <!-- balloons will be generated dynamically -->
+  </div>
+</div>
+<div id="confetti" class="confetti" aria-hidden="true"></div>
+
+<script>
+  // flexible game logic: supports multiple symbol sets and configurable pair counts
+
+  // Audio: simple Web Audio API helpers for click, match, mismatch, and win fanfare
+  const AudioSvc = (function(){
+    const Ctx = (window.AudioContext || window.webkitAudioContext) ? new (window.AudioContext || window.webkitAudioContext)() : null;
+    function playTone(freq, duration=0.08, type='sine', when=0, gain=0.12){
+      if (!Ctx) return;
+      const o = Ctx.createOscillator();
+      const g = Ctx.createGain();
+      o.type = type; o.frequency.value = freq;
+      g.gain.value = gain;
+      o.connect(g); g.connect(Ctx.destination);
+      const now = Ctx.currentTime + when;
+      o.start(now); o.stop(now + duration);
+    }
+    function click(){ playTone(880, 0.06, 'sine', 0, 0.08); }
+    function match(){ playTone(660, 0.10, 'sine', 0, 0.14); playTone(880, 0.12, 'sine', 0.08, 0.12); }
+    function mismatch(){ playTone(220, 0.12, 'sawtooth', 0, 0.12); }
+    function win(){ // short fanfare
+      playTone(880,0.10,'sine',0,0.12);
+      playTone(1046.5,0.10,'sine',0.08,0.12);
+      playTone(1318.5,0.14,'sine',0.18,0.14);
+      // small chord
+      setTimeout(()=>{ playTone(1046.5,0.5,'sine',0,0.08); }, 420);
+    }
+    return {click, match, mismatch, win};
+  })();
+
+  // vibration helper
+  function vibrate(pattern){ if (navigator.vibrate) navigator.vibrate(pattern); }
+
+  // Pools
+  const POOLS = {
+    alpha: Array.from({length:26}, (_,i)=>String.fromCharCode(65+i)), // 'A'..'Z'
+    numbers: Array.from({length:10}, (_,i)=>String(i)),
+    emoji: ["🍎","🐶","🚗","🌟","🍌","⚽","🎈","🐱","🍇","🦋","🍓","🚲","🍉","🌈","🐠","🍒","🎵","🔑","🍪","☂️"],
+    symbols: ["★","◆","●","■","▲","▼","♥","✿","✈","☼","♫","✔","✖","◐","◑","◎","◇","▼","⬟","⬢"]
+  };
+
+  let cards = [];
+  let firstCard = null;
+  let secondCard = null;
+
+  const gameBoard = document.getElementById('game');
+  const intro = document.getElementById('intro');
+  const playBtn = document.getElementById('playBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const modeSelect = document.getElementById('modeSelect');
+  const pairCountInput = document.getElementById('pairCount');
+  const controlsEl = document.querySelector('.controls');
+  const celebrationEl = document.getElementById('celebration');
+  const confettiEl = document.getElementById('confetti');
+
+  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+  // Adjust CSS min card size depending on total boxes so more boxes can fit on small screens
+  function adjustCardSizeForCount(totalCards){
+    // totalCards is number of tiles (pairs*2). For larger boards, reduce min size and enable compact class
+    if (totalCards >= 20){
+      document.documentElement.style.setProperty('--card-min', '56px');
+      document.body.classList.add('compact');
+    } else if (totalCards >= 14){
+      document.documentElement.style.setProperty('--card-min', '64px');
+      document.body.classList.add('compact');
+    } else {
+      document.documentElement.style.setProperty('--card-min', '84px');
+      document.body.classList.remove('compact');
+    }
+  }
+
+  function buildPool(mode, pairs){
+    const pool = POOLS[mode] || POOLS['alpha'];
+    const max = pool.length;
+    pairs = clamp(pairs, 2, max);
+    // choose a random subset of size pairs
+    const shuffled = pool.slice();
+    for (let i = shuffled.length-1; i>0; i--){
+      const j = Math.floor(Math.random()*(i+1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.slice(0, pairs);
+  }
+
+  function generateCards(mode, pairs){
+    const items = buildPool(mode, pairs);
+    const result = [];
+
+    if (mode === 'alpha'){
+      // for alphabet create upper/lower pairs (A vs a)
+      items.forEach(ch => {
+        result.push({display: ch, matchKey: ch.toLowerCase(), type: 'upper'});
+        result.push({display: ch.toLowerCase(), matchKey: ch.toLowerCase(), type: 'lower'});
+      });
+    } else {
+      // identical pairs
+      items.forEach(sym =>{
+        result.push({display: sym, matchKey: sym, type: 'pair'});
+        result.push({display: sym, matchKey: sym, type: 'pair'});
+      });
+    }
+
+    // shuffle
+    for (let i = result.length-1; i>0; i--){
+      const j = Math.floor(Math.random()*(i+1)); [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+  }
+
+  // Update board padding so controls don't overlap cards (measure controls height + safe area)
+  function updateBoardPadding(){
+    try{
+      const controlsRect = controlsEl.getBoundingClientRect();
+      const safePadding = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-padding')) || 12;
+      const extra = 12; // small breathing room
+      const padBottom = Math.ceil(controlsRect.height + safePadding + extra);
+      gameBoard.style.paddingBottom = padBottom + 'px';
+    } catch(e){
+      // fallback
+      gameBoard.style.paddingBottom = '110px';
+    }
+  }
+
+  // Decide column count to make grid alignment predictable on mobile
+  function computeColumnsForCount(totalCards){
+    // Prefer square-ish grids; special case common counts
+    if (totalCards === 20) return 5; // 5 columns x 4 rows
+    if (totalCards === 18) return 6; // 6x3
+    if (totalCards >= 16) return 4; // 4 columns for 16
+    if (totalCards >= 12) return 4;
+    if (totalCards >= 8) return 4;
+    if (totalCards >= 6) return 3;
+    return Math.min(6, totalCards);
+  }
+
+  // Central layout updater: adjusts card size, columns, and padding for a target card count
+  function updateLayoutForCount(totalCards){
+    adjustCardSizeForCount(totalCards);
+    const cols = computeColumnsForCount(totalCards);
+    gameBoard.style.gridTemplateColumns = `repeat(${cols}, minmax(var(--card-min,56px), 1fr))`;
+    updateBoardPadding();
+  }
+
+  function startGame(mode, pairs){
+    gameBoard.innerHTML = "";
+    firstCard = null; secondCard = null; cards = [];
+
+    // generate card objects
+    cards = generateCards(mode, pairs);
+
+    // update layout (size, columns, padding) before rendering cards
+    updateLayoutForCount(cards.length);
+
+    cards.forEach((card, index) => {
+      const cardDiv = document.createElement('button');
+      cardDiv.className = 'card hidden';
+      cardDiv.dataset.index = index;
+      cardDiv.innerHTML = card.display; // allow emoji and symbols
+      cardDiv.type = 'button';
+      cardDiv.setAttribute('aria-pressed','false');
+      cardDiv.onclick = () => flipCard(cardDiv);
+      gameBoard.appendChild(cardDiv);
+    });
+  }
+
+  // Flip: play click sound on first interaction
+  function flipCard(cardDiv){
+    AudioSvc.click();
+    vibrate(20);
+
+    const index = cardDiv.dataset.index;
+    const card = cards[index];
+    if (!cardDiv || cardDiv.classList.contains('matched')) return;
+
+    // reveal visually
+    cardDiv.classList.remove('hidden');
+    cardDiv.setAttribute('aria-pressed','true');
+
+    if (!firstCard){
+      firstCard = {cardDiv, card};
+    } else if (!secondCard && cardDiv !== firstCard.cardDiv){
+      secondCard = {cardDiv, card};
+      setTimeout(checkMatch, 500);
+    }
+  }
+
+  function showMatchEffect(cardDivA, cardDivB){
+    // small visual pulse on matched cards
+    [cardDivA, cardDivB].forEach(el=>{
+      el.animate([{transform:'scale(1)'},{transform:'scale(1.06)'},{transform:'scale(1)'}],{duration:320,easing:'ease'});
+    });
+  }
+
+  function checkMatch(){
+    if (!firstCard || !secondCard){ firstCard = null; secondCard = null; return; }
+
+    if (firstCard.card.matchKey === secondCard.card.matchKey && firstCard.card.type !== 'locked' && secondCard.card.type !== 'locked'){
+      firstCard.cardDiv.classList.add('matched');
+      secondCard.cardDiv.classList.add('matched');
+      firstCard.cardDiv.setAttribute('aria-pressed','true');
+      secondCard.cardDiv.setAttribute('aria-pressed','true');
+      // mark as locked to prevent re-match logic
+      firstCard.card.type = 'locked';
+      secondCard.card.type = 'locked';
+
+      // audio + vibration + visual
+      AudioSvc.match();
+      vibrate([30,20,30]);
+      showMatchEffect(firstCard.cardDiv, secondCard.cardDiv);
+
+      // check for completion
+      const allLocked = cards.every(c => c.type === 'locked');
+      if (allLocked){
+        // small delay so last match animation finishes
+        setTimeout(()=>{
+          triggerCelebration();
+        }, 400);
+      }
+    } else {
+      // mismatch: flip back
+      AudioSvc.mismatch();
+      vibrate(40);
+      firstCard.cardDiv.classList.add('hidden');
+      secondCard.cardDiv.classList.add('hidden');
+      firstCard.cardDiv.setAttribute('aria-pressed','false');
+      secondCard.cardDiv.setAttribute('aria-pressed','false');
+    }
+    firstCard = null; secondCard = null;
+  }
+
+  // Celebration: create balloons and confetti, play fanfare, then auto-hide after a timeout
+  function triggerCelebration(){
+    AudioSvc.win();
+    vibrate([100,50,100]);
+    showBalloons(12);
+    throwConfetti(30);
+    // also briefly show a larger message
+    celebrationEl.classList.add('show');
+    celebrationEl.setAttribute('aria-hidden','false');
+    setTimeout(()=>{
+      celebrationEl.classList.remove('show');
+      celebrationEl.setAttribute('aria-hidden','true');
+    }, 6000);
+  }
+
+  function showBalloons(count){
+    const cardRect = gameBoard.getBoundingClientRect();
+    const container = celebrationEl.querySelector('.celebration-card');
+    // remove old balloons
+    Array.from(container.querySelectorAll('.balloon')).forEach(e=>e.remove());
+    for (let i=0;i<count;i++){
+      const b = document.createElement('div');
+      b.className = 'balloon';
+      const colors = ['#ff5c8a','#ffd166','#8bd3ff','#9bda7f','#b28bff','#ffb86b'];
+      const color = colors[i % colors.length];
+      b.style.background = color;
+      // random horizontal position across screen
+      const left = Math.round(Math.random()*90);
+      b.style.left = left + '%';
+      b.style.bottom = '-10vh';
+      // random delay
+      b.style.animationDelay = (Math.random()*0.8) + 's';
+      b.classList.add('animate');
+      container.appendChild(b);
+      // remove after animation
+      setTimeout(()=>{ b.remove(); }, 5000 + Math.random()*1000);
+    }
+  }
+
+  function throwConfetti(n){
+    // remove existing
+    confettiEl.innerHTML = '';
+    const colors = ['#ff5c8a','#ffd166','#8bd3ff','#9bda7f','#b28bff','#ffb86b','#ffffff','#ff6b6b'];
+    const w = window.innerWidth;
+    for (let i=0;i<n;i++){
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.background = colors[i % colors.length];
+      piece.style.left = Math.floor(Math.random()*100) + '%';
+      piece.style.top = '-' + Math.floor(Math.random()*20) + 'vh';
+      piece.style.width = (6 + Math.random()*12) + 'px';
+      piece.style.height = (8 + Math.random()*16) + 'px';
+      piece.style.animationDelay = (Math.random()*400) + 'ms';
+      confettiEl.appendChild(piece);
+      setTimeout(()=> piece.remove(), 3000 + Math.random()*1000);
+    }
+  }
+
+  // Play button: hide intro, start and request fullscreen if available (must be in user gesture)
+  playBtn.addEventListener('click', async function(){
+    const mode = modeSelect.value;
+    let pairs = parseInt(pairCountInput.value, 10) || 10;
+
+    const maxPairs = POOLS[mode].length || 26;
+    pairs = clamp(pairs, 2, maxPairs);
+
+    // pre-adjust card size before start for best first-frame layout
+    adjustCardSizeForCount(pairs * 2);
+
+    try{
+      // request fullscreen (best-effort, some browsers require HTTPS)
+      if (document.documentElement.requestFullscreen){
+        await document.documentElement.requestFullscreen();
+      }
+    } catch(e){
+      // ignore fullscreen errors
+    }
+    // mark the page as playing so header is hidden and the board fills the view
+    document.body.classList.add('playing');
+    intro.style.display = 'none';
+    updateBoardPadding();
+    startGame(mode, pairs);
+  });
+
+  // If the user exits fullscreen, remove the playing state so header and UI are restored
+  document.addEventListener('fullscreenchange', function(){
+    if (!document.fullscreenElement){
+      document.body.classList.remove('playing');
+      // keep intro hidden after exit; user can use Restart/Home controls
+    }
+  });
+
+  restartBtn.addEventListener('click', function(){
+    // restart with current settings (if intro hidden, use those values)
+    const mode = modeSelect.value;
+    let pairs = parseInt(pairCountInput.value, 10) || 10;
+    const maxPairs = POOLS[mode].length || 26;
+    pairs = clamp(pairs, 2, maxPairs);
+    setTimeout(()=> startGame(mode, pairs), 80);
+  });
+
+  // Recompute layout on rotation/resize to keep layout tidy
+  function handleResize(){
+    const currentCount = cards.length || (parseInt(pairCountInput.value,10)||10)*2;
+    updateLayoutForCount(currentCount);
+  }
+  window.addEventListener('orientationchange', handleResize);
+  window.addEventListener('resize', () => { clearTimeout(window.__resizeTimer); window.__resizeTimer = setTimeout(handleResize, 120); });
+
+  // Expose function for debugging if needed
+  window.startGame = startGame;
+
+  // Pre-check: if someone opens the page directly and wants a quick demo, prepare a default board (not auto-start)
+  // Optionally you can call startGame('alpha', 10) here to generate immediately without pressing Play.
+</script>
+
+
+<!-- How to Play Button and Modal -->
+<button class="howto-btn" id="howtoBtn" title="How to Play" aria-label="How to Play" style="position: fixed; bottom: 24px; right: 24px; z-index: 1001; background: var(--accent, #FF8C42); color: #fff; border: none; border-radius: 50%; width: 56px; height: 56px; box-shadow: 0 4px 16px rgba(0,0,0,0.13); font-size: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.18s;">?</button>
+<div id="howtoModal" class="howto-modal" style="display:none; position:fixed; inset:0; z-index:1002; background:rgba(0,0,0,0.32); align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:16px; max-width:90vw; width:340px; padding:28px 18px 18px 18px; box-shadow:0 8px 32px rgba(0,0,0,0.18); text-align:center; position:relative;">
+    <button id="howtoClose" aria-label="Close" style="position:absolute; top:10px; right:10px; background:none; border:none; font-size:22px; color:#888; cursor:pointer;">&times;</button>
+    <h2 id="howtoTitle">How to Play</h2>
+    <div id="howtoContent" style="font-size:16px; color:#222; margin-top:10px;">
+      Tap tiles to reveal and match pairs. Choose your set and number of pairs, then try to match all pairs with as few mistakes as possible!
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var btn = document.getElementById('howtoBtn');
+  var modal = document.getElementById('howtoModal');
+  var close = document.getElementById('howtoClose');
+  btn.addEventListener('click', function() { modal.style.display = 'flex'; });
+  close.addEventListener('click', function() { modal.style.display = 'none'; });
+  modal.addEventListener('click', function(e) { if(e.target === modal) modal.style.display = 'none'; });
+});
+</script>
+<div id="ageModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Age verification">
+    <div class="modal-content">
+      <h2>Are you a parent?</h2>
+      <p>Please enter your birth year to continue to parental settings.</p>
+      <input id="birthYear" type="number" placeholder="e.g. 1980" min="1900" max="2025" />
+      <div class="modal-actions">
+        <button id="ageSubmit">Confirm</button>
+        <button id="ageCancel" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <script type="module">
+    import { injectNavbar } from '/scripts/navbar-footer.js';
+    injectNavbar();
+    // Wire up parental modal logic after navbar injection
+    window.addEventListener('DOMContentLoaded', () => {
+      var parentBtn = document.getElementById('parent-btn');
+      if (parentBtn) {
+        parentBtn.addEventListener('click', function(){
+          if (typeof showParentalGate === 'function') showParentalGate();
+        });
+      }
+      var ageSubmit = document.getElementById('ageSubmit');
+      if (ageSubmit) {
+        ageSubmit.addEventListener('click', function(){
+          const year = parseInt(document.getElementById('birthYear').value || '0', 10);
+          if (isNaN(year)) return;
+          if (typeof handleParentalConfirm === 'function') handleParentalConfirm(year);
+        });
+      }
+      var ageCancel = document.getElementById('ageCancel');
+      if (ageCancel) {
+        ageCancel.addEventListener('click', function(){
+          if (typeof closeParentalModal === 'function') closeParentalModal();
+        });
+      }
+    });
+  </script>
+  <script src="/game-shell.js"></script>
+</body>
+</html>

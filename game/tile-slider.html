@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tile Slider</title>
+  <link rel="icon" href="/kiddoxy.png" type="image/png">
+  <link rel="stylesheet" href="/styles/kid-kit.css">
+  <style>
+    .board { position: relative; width: min(92vw, 440px); aspect-ratio: 1; margin: 0 auto; background: #e0e7ff; border-radius: 18px; padding: 6px; touch-action: none; }
+    .tile {
+      position: absolute; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-weight: 900; color: #fff; cursor: pointer; user-select: none;
+      transition: left .15s ease, top .15s ease; box-shadow: inset 0 -5px 0 rgba(0,0,0,.18);
+      background-repeat: no-repeat; text-shadow: 0 2px 3px rgba(0,0,0,.35);
+    }
+    .tile.ok { outline: 3px solid rgba(255,255,255,.85); outline-offset: -5px; }
+    .controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+    .preview { width: 110px; aspect-ratio: 1; border-radius: 12px; background-size: cover; box-shadow: var(--k-shadow); }
+    .row { display: flex; gap: 14px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  </style>
+  <script defer src="/scripts/game-brand.js"></script>
+  <script defer src="/game-shell.js"></script>
+  <script src="/scripts/kid-kit.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="game-header">
+    <h1>🧩 Tile Slider</h1>
+    <div class="hud">
+      <span class="pill">Moves: <span id="moves">0</span></span>
+      <span class="pill">Best: <span id="best">–</span></span>
+      <button class="btn secondary icon-btn" id="muteBtn" aria-label="Sound">🔊</button>
+    </div>
+  </header>
+  <main class="game-main">
+    <div class="panel">
+      <p class="prompt">Slide the tiles into order!</p>
+      <div class="row" style="margin-bottom:12px">
+        <div class="seg" id="sizeSeg" role="group" aria-label="Board size">
+          <button data-size="2">2×2</button><button data-size="3" class="active">3×3</button><button data-size="4">4×4</button>
+        </div>
+        <div class="seg" id="modeSeg" role="group" aria-label="Tile style">
+          <button data-mode="numbers" class="active">1 2 3</button><button data-mode="picture">🖼️ Picture</button>
+        </div>
+      </div>
+      <div class="board" id="board" aria-label="Sliding puzzle"></div>
+      <div class="controls">
+        <button class="btn" id="shuffleBtn">🔀 Shuffle</button>
+        <div class="preview" id="preview" title="Goal picture" hidden></div>
+      </div>
+      <p class="muted" style="text-align:center">Tap a tile next to the empty space, swipe, or use the arrow keys.</p>
+    </div>
+  </main>
+  <div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+</div>
+<script>
+(function () {
+  const COLORS = ['#f97316', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#14b8a6', '#eab308', '#ef4444'];
+  const PICS = ['/assets/games/jigsaw/animals/lion.svg', '/assets/games/jigsaw/animals/fox.svg', '/assets/games/jigsaw/animals/elephant.svg'];
+  const board = document.getElementById('board');
+  const movesEl = document.getElementById('moves');
+  const bestEl = document.getElementById('best');
+  const preview = document.getElementById('preview');
+  let N = 3, mode = 'numbers', pic = PICS[0];
+  let cells = [];   // cells[pos] = tile number (0 = empty), solved when cells[i] === i+1
+  let moves = 0, done = false, els = {};
+
+  function key() { return 'tile-slider-' + N; }
+
+  function newGame() {
+    done = false; moves = 0; movesEl.textContent = '0';
+    const b = Kit.best(key()); bestEl.textContent = b === null ? '–' : b;
+    pic = Kit.pick(PICS);
+    cells = Array.from({ length: N * N }, (_, i) => (i + 1) % (N * N));
+    // Shuffle with random legal moves only → always solvable
+    let empty = N * N - 1, prev = -1;
+    const steps = N === 2 ? 20 : N === 3 ? 80 : 200;
+    for (let s = 0; s < steps; s++) {
+      const opts = neighbours(empty).filter(p => p !== prev);
+      const p = Kit.pick(opts);
+      [cells[empty], cells[p]] = [cells[p], cells[empty]];
+      prev = empty; empty = p;
+    }
+    if (isSolved()) return newGame();
+    build();
+  }
+
+  function neighbours(pos) {
+    const r = Math.floor(pos / N), c = pos % N, out = [];
+    if (r > 0) out.push(pos - N);
+    if (r < N - 1) out.push(pos + N);
+    if (c > 0) out.push(pos - 1);
+    if (c < N - 1) out.push(pos + 1);
+    return out;
+  }
+  const isSolved = () => cells.every((v, i) => v === (i + 1) % (N * N));
+
+  function build() {
+    board.innerHTML = ''; els = {};
+    preview.hidden = mode !== 'picture';
+    preview.style.backgroundImage = `url('${pic}')`;
+    for (let n = 1; n < N * N; n++) {
+      const t = document.createElement('div');
+      t.className = 'tile';
+      t.dataset.n = n;
+      if (mode === 'numbers') {
+        t.textContent = n;
+        t.style.background = COLORS[(n - 1) % COLORS.length];
+      } else {
+        const r = Math.floor((n - 1) / N), c = (n - 1) % N;
+        t.style.backgroundImage = `url('${pic}')`;
+        t.style.backgroundSize = `${N * 100}% ${N * 100}%`;
+        t.style.backgroundPosition = `${N === 1 ? 0 : (c / (N - 1)) * 100}% ${(r / (N - 1)) * 100}%`;
+        t.style.fontSize = '14px';
+        t.textContent = '';
+      }
+      t.addEventListener('click', () => { if (swiped) { swiped = false; return; } tryMove(cells.indexOf(n)); });
+      board.appendChild(t);
+      els[n] = t;
+    }
+    layout();
+  }
+
+  function layout() {
+    const gap = 6, inner = board.clientWidth - 12;
+    const size = (inner - gap * (N - 1)) / N;
+    cells.forEach((n, pos) => {
+      if (!n) return;
+      const t = els[n], r = Math.floor(pos / N), c = pos % N;
+      t.style.width = t.style.height = size + 'px';
+      t.style.left = 6 + c * (size + gap) + 'px';
+      t.style.top = 6 + r * (size + gap) + 'px';
+      if (mode === 'numbers') t.style.fontSize = Math.round(size * 0.42) + 'px';
+      t.classList.toggle('ok', n === pos + 1);
+    });
+  }
+
+  function tryMove(pos) {
+    if (done) return;
+    const empty = cells.indexOf(0);
+    if (!neighbours(empty).includes(pos)) { Kit.sfx.bad(); return; }
+    [cells[empty], cells[pos]] = [cells[pos], cells[empty]];
+    moves++; movesEl.textContent = moves;
+    Kit.sfx.tap();
+    layout();
+    if (isSolved()) win();
+  }
+
+  function win() {
+    done = true;
+    const r = Kit.best(key(), moves, false);
+    bestEl.textContent = r.best;
+    Kit.sfx.win(); Kit.celebrate();
+    setTimeout(() => Kit.showResult({
+      emoji: '🏆', title: 'Puzzle solved!',
+      text: `You did it in ${moves} moves.` + (r.isNew ? ' New best!' : ''),
+      onAgain: newGame
+    }), 600);
+  }
+
+  // Move the tile that sits on the given side of the empty cell
+  function slide(dr, dc) {
+    const e = cells.indexOf(0), r = Math.floor(e / N) - dr, c = e % N - dc;
+    if (r < 0 || c < 0 || r >= N || c >= N) return;
+    tryMove(r * N + c);
+  }
+  window.addEventListener('keydown', e => {
+    const m = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }[e.key];
+    if (!m) return; e.preventDefault(); slide(m[0], m[1]);
+  });
+  let sx = 0, sy = 0, swiped = false;
+  board.addEventListener('pointerdown', e => { sx = e.clientX; sy = e.clientY; swiped = false; });
+  board.addEventListener('pointerup', e => {
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 30) return; // a tap, handled by click
+    swiped = true;
+    if (Math.abs(dx) > Math.abs(dy)) slide(0, dx > 0 ? 1 : -1); else slide(dy > 0 ? 1 : -1, 0);
+  });
+
+  function seg(id, attr, cb) {
+    const el = document.getElementById(id);
+    el.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      el.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+      cb(b.dataset[attr]);
+    });
+  }
+  seg('sizeSeg', 'size', v => { N = Number(v); newGame(); });
+  seg('modeSeg', 'mode', v => { mode = v; build(); });
+  document.getElementById('shuffleBtn').addEventListener('click', newGame);
+  window.addEventListener('resize', layout);
+  newGame();
+})();
+</script>
+</body>
+</html>

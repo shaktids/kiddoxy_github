@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Memory Match</title>
+  <link rel="icon" href="/kiddoxy.png" type="image/png">
+  <link rel="stylesheet" href="/styles/kid-kit.css">
+  <style>
+    .board { display: grid; gap: 10px; width: 100%; max-width: 640px; margin: 0 auto; perspective: 900px; }
+    .card { position: relative; aspect-ratio: 3/4; border: none; padding: 0; background: transparent; cursor: pointer; }
+    .card .inner { position: absolute; inset: 0; transition: transform .35s ease; transform-style: preserve-3d; }
+    .card.flipped .inner, .card.matched .inner { transform: rotateY(180deg); }
+    .face { position: absolute; inset: 0; border-radius: 14px; display: flex; align-items: center; justify-content: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 6px 14px rgba(0,0,0,.10); }
+    .back { background: linear-gradient(135deg, #818cf8, #c084fc); color: #fff; font-size: clamp(20px, 6vw, 34px); font-weight: 900; }
+    .front { background: #fff; transform: rotateY(180deg); font-size: clamp(28px, 9vw, 56px); }
+    .card.matched .front { background: #dcfce7; }
+    .row { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+  </style>
+  <script defer src="/scripts/game-brand.js"></script>
+  <script defer src="/game-shell.js"></script>
+  <script src="/scripts/kid-kit.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="game-header">
+    <h1>🧠 Memory Match</h1>
+    <div class="hud">
+      <span class="pill">Moves: <span id="moves">0</span></span>
+      <span class="pill">⏱ <span id="time">0</span>s</span>
+      <span class="pill">Best: <span id="best">–</span></span>
+      <button class="btn secondary icon-btn" id="muteBtn" aria-label="Sound">🔊</button>
+    </div>
+  </header>
+  <main class="game-main">
+    <div class="panel">
+      <div class="row">
+        <div class="seg" id="levelSeg" role="group" aria-label="Level">
+          <button data-pairs="3">Easy</button><button data-pairs="6" class="active">Medium</button><button data-pairs="8">Hard</button><button data-pairs="10">Expert</button>
+        </div>
+        <div class="seg" id="themeSeg" role="group" aria-label="Theme">
+          <button data-theme="animals" class="active">🐶</button><button data-theme="food">🍎</button><button data-theme="things">🚗</button><button data-theme="nature">🌸</button>
+        </div>
+        <button class="btn" id="restart">🔄 New game</button>
+      </div>
+      <div id="board" class="board" aria-label="Memory board"></div>
+    </div>
+  </main>
+  <div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+</div>
+<script>
+(function () {
+  const THEMES = {
+    animals: ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐸', '🐵', '🦁', '🐯', '🐷', '🐮'],
+    food: ['🍎', '🍌', '🍇', '🍓', '🍉', '🍒', '🥕', '🌽', '🍕', '🧁', '🍪', '🍩'],
+    things: ['🚗', '🚀', '⚽', '🎈', '🎸', '🚂', '✈️', '🧸', '🎁', '⛵', '🚲', '🪁'],
+    nature: ['🌸', '🌻', '🌈', '⭐', '🌙', '☀️', '🍄', '🌵', '🍁', '❄️', '🌊', '🦋'],
+  };
+  const board = document.getElementById('board');
+  const movesEl = document.getElementById('moves'), timeEl = document.getElementById('time'), bestEl = document.getElementById('best');
+  let pairs = 6, theme = 'animals';
+  let open = [], lock = false, matched = 0, moves = 0, seconds = 0, timer = null, started = false;
+
+  function cols() { const total = pairs * 2; if (total <= 6) return 3; if (total <= 12) return window.innerWidth < 480 ? 3 : 4; if (total <= 16) return 4; return window.innerWidth < 480 ? 4 : 5; }
+
+  function build() {
+    clearInterval(timer); timer = null; started = false;
+    open = []; lock = false; matched = 0; moves = 0; seconds = 0;
+    movesEl.textContent = '0'; timeEl.textContent = '0';
+    const b = Kit.best('memory-' + pairs); bestEl.textContent = b === null ? '–' : b + ' moves';
+    const symbols = Kit.shuffle(THEMES[theme].slice()).slice(0, pairs);
+    const deck = Kit.shuffle(symbols.concat(symbols));
+    board.style.gridTemplateColumns = `repeat(${cols()}, 1fr)`;
+    board.style.maxWidth = pairs <= 3 ? '420px' : '640px';
+    board.innerHTML = '';
+    deck.forEach(s => {
+      const card = document.createElement('button');
+      card.className = 'card'; card.dataset.symbol = s; card.setAttribute('aria-label', 'Hidden card');
+      card.innerHTML = `<div class="inner"><div class="face back">?</div><div class="face front">${s}</div></div>`;
+      card.addEventListener('click', () => flip(card));
+      board.appendChild(card);
+    });
+  }
+
+  function flip(card) {
+    if (lock || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+    if (!started) { started = true; timer = setInterval(() => { seconds++; timeEl.textContent = seconds; }, 1000); }
+    card.classList.add('flipped'); card.setAttribute('aria-label', card.dataset.symbol);
+    Kit.sfx.tap();
+    open.push(card);
+    if (open.length < 2) return;
+    moves++; movesEl.textContent = moves;
+    const [a, b] = open;
+    if (a.dataset.symbol === b.dataset.symbol) {
+      open = [];
+      setTimeout(() => {
+        [a, b].forEach(x => { x.classList.remove('flipped'); x.classList.add('matched'); x.classList.add('pop'); });
+        Kit.sfx.good();
+        matched++;
+        if (matched === pairs) win();
+      }, 250);
+    } else {
+      lock = true;
+      setTimeout(() => {
+        [a, b].forEach(x => { x.classList.remove('flipped'); x.setAttribute('aria-label', 'Hidden card'); });
+        open = []; lock = false;
+      }, 800);
+    }
+  }
+
+  function win() {
+    clearInterval(timer);
+    const r = Kit.best('memory-' + pairs, moves, false);
+    bestEl.textContent = r.best + ' moves';
+    const stars = moves <= pairs * 1.5 ? '⭐⭐⭐' : moves <= pairs * 2.2 ? '⭐⭐' : '⭐';
+    Kit.sfx.win(); Kit.celebrate();
+    setTimeout(() => Kit.showResult({
+      emoji: stars, title: 'All pairs found!',
+      text: `${moves} moves in ${seconds} seconds.` + (r.isNew ? ' New best!' : ''),
+      onAgain: build
+    }), 700);
+  }
+
+  function seg(id, attr, cb) {
+    const el = document.getElementById(id);
+    el.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      el.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+      cb(b.dataset[attr]);
+    });
+  }
+  seg('levelSeg', 'pairs', v => { pairs = Number(v); build(); });
+  seg('themeSeg', 'theme', v => { theme = v; build(); });
+  document.getElementById('restart').addEventListener('click', build);
+  window.addEventListener('resize', () => { board.style.gridTemplateColumns = `repeat(${cols()}, 1fr)`; });
+  build();
+})();
+</script>
+</body>
+</html>

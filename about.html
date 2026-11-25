@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>About Kiddoxy</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body style="background: linear-gradient(120deg, #e0e7ef 0%, #f8fafc 100%); min-height:100vh;">
+  
+  <main class="content-wrap">
+    <section class="content-card" style="background:rgba(255,255,255,0.72);backdrop-filter:blur(16px) saturate(160%);box-shadow:0 8px 32px 0 rgba(60,60,90,0.10);border-radius:22px;padding:38px 32px 28px 32px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+        <svg width="36" height="36" fill="none" viewBox="0 0 24 24"><rect width="24" height="24" rx="12" fill="#3b82f6"/><path d="M12 7a5 5 0 0 1 5 5v2.5a2.5 2.5 0 0 1-5 0V12a1 1 0 1 0-2 0v2.5a4.5 4.5 0 0 0 9 0V12a7 7 0 1 0-14 0v2.5a1 1 0 1 0 2 0V12a5 5 0 0 1 5-5Z" fill="#fff"/></svg>
+        <h1 style="font-size:2.1rem;font-weight:900;color:#222;margin:0;letter-spacing:-1px;">About Kiddoxy</h1>
+      </div>
+      <div style="margin-bottom:22px;color:#333;font-size:1.13rem;">Kiddoxy is a safe, fun, and educational platform designed for young children and families. Our mission is to make learning and play accessible to all, with games that are easy to use, age-appropriate, and privacy-friendly.</div>
+      <div style="margin-bottom:18px;">
+        <div style="font-weight:700;color:#222;margin-bottom:6px;">Our Vision</div>
+        <div style="color:#444;">To inspire curiosity, creativity, and confidence in every child through playful digital experiences.</div>
+      </div>
+      <div style="margin-bottom:18px;">
+        <div style="font-weight:700;color:#222;margin-bottom:6px;">What Makes Kiddoxy Different?</div>
+        <ul style="color:#444;padding-left:22px;margin:0 0 0.5em 0;">
+          <li>No personal data collection</li>
+          <li>No downloads or sign-up required</li>
+          <li>Ad-filtered, safe content</li>
+          <li>Designed for accessibility and inclusivity</li>
+          <li>Free to use, always</li>
+        </ul>
+      </div>
+      <div style="margin-bottom:18px;">
+        <div style="font-weight:700;color:#222;margin-bottom:6px;">Meet the Team</div>
+        <div style="color:#444;">Kiddoxy is built by a passionate team of educators, designers, and developers who care deeply about child safety and digital well-being.</div>
+      </div>
+      <div style="margin-bottom:18px;">
+        <div style="font-weight:700;color:#222;margin-bottom:6px;">Contact Us</div>
+        <div style="color:#444;">Have feedback or ideas? <a href="/help.html" style="color:#3b82f6;text-decoration:underline;">Contact us here</a> or email <a href="mailto:info@kiddoxy.com" style="color:#3b82f6;text-decoration:underline;">info@kiddoxy.com</a>.</div>
+      </div>
+    </section>
+  </main>
+  <div id="ageModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Age verification">
+    <div class="modal-content">
+      <h2>Are you a parent?</h2>
+      <p>Please enter your birth year to continue to parental settings.</p>
+      <input id="birthYear" type="number" placeholder="e.g. 1980" min="1900" max="2025" />
+      <div class="modal-actions">
+        <button id="ageSubmit">Confirm</button>
+        <button id="ageCancel" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <script type="module">
+    import { injectNavbar, injectFooter } from '/scripts/navbar-footer.js';
+    injectNavbar();
+    injectFooter();
+    // Wire up parental modal logic after navbar injection
+    window.addEventListener('DOMContentLoaded', () => {
+      var parentBtn = document.getElementById('parent-btn');
+      if (parentBtn) {
+        parentBtn.addEventListener('click', function(){
+          if (typeof showParentalGate === 'function') showParentalGate();
+        });
+      }
+      var ageSubmit = document.getElementById('ageSubmit');
+      if (ageSubmit) {
+        ageSubmit.addEventListener('click', function(){
+          const year = parseInt(document.getElementById('birthYear').value || '0', 10);
+          if (isNaN(year)) return;
+          if (typeof handleParentalConfirm === 'function') handleParentalConfirm(year);
+        });
+      }
+      var ageCancel = document.getElementById('ageCancel');
+      if (ageCancel) {
+        ageCancel.addEventListener('click', function(){
+          if (typeof closeParentalModal === 'function') closeParentalModal();
+        });
+      }
+    });
+  </script>
+  <script src="/game-shell.js"></script>
+</body>
+</html>

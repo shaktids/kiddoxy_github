@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Coloring Page</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    :root{
+      --bg-top:#c5f3ff;
+      --bg-mid:#a8dcff;
+      --bg-bottom:#88c8ff;
+      --surface:#ffffffde;
+      --ink:#072f57;
+      --muted:#355a7a;
+      --accent:#ff7a59;
+      --ok:#22c55e;
+      --warn:#ef4444;
+      --panel:#ffffffde;
+      --accent-deep:#e85f3d;
+      --btn-blue:#2563eb;
+      --btn-blue-deep:#1e40af;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,body{
+      height:100%;
+      margin:0;
+      font-family:"Baloo 2","Comic Sans MS","Trebuchet MS",sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at 16% 14%, #ffffffb7 0 12%, transparent 13%),
+        radial-gradient(circle at 84% 9%, #fff4bf92 0 13%, transparent 14%),
+        linear-gradient(180deg,var(--bg-top) 0%,var(--bg-mid) 55%,var(--bg-bottom) 100%);
+      padding-bottom:92px;
+    }
+
+    .wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center}
+
+    .shell{width:min(560px,96vw)}
+
+    .paint-shell{
+      width:100%;
+      margin:12px auto 14px;
+      border-radius:24px;
+      padding:12px;
+      border:3px solid #ffffffc2;
+      background:var(--panel);
+      box-shadow:0 20px 34px #124f9440;
+      backdrop-filter:blur(3px);
+      animation:fade-in .4s ease-out;
+    }
+
+    header{
+      padding:8px 4px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .title-wrap{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      background:#ffffffeb;
+      border:2px solid #ffd6cc;
+      border-radius:999px;
+      padding:8px 12px;
+      box-shadow:0 8px 14px #fb71854a;
+    }
+
+    .title-icon{
+      width:40px;
+      height:40px;
+      border-radius:12px;
+      display:grid;
+      place-items:center;
+      color:#fff;
+      font-size:1.2rem;
+      font-weight:800;
+      background:linear-gradient(150deg,#ff8a66,#ef4444);
+    }
+
+    h1{font-size:clamp(1.1rem,3.8vw,1.9rem);margin:0;font-weight:800;line-height:1.1}
+
+    .helper{margin:2px 0 10px;text-align:center;color:var(--muted);font-weight:700}
+
+    .status-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+
+    .stats{background:#f8fbff;border:2px solid #d8ecff;border-radius:12px;padding:8px 10px;text-align:center;font-weight:800;color:#1f4b78}
+
+    .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+    .btn{
+      border:0;
+      color:#fff;
+      border-radius:12px;
+      padding:10px 14px;
+      min-height:44px;
+      font-weight:800;
+      font-family:inherit;
+      letter-spacing:0.2px;
+      cursor:pointer;
+      transition:transform .14s ease;
+    }
+
+    #clearBtn{background:linear-gradient(180deg,var(--btn-blue),var(--btn-blue-deep));box-shadow:0 7px 12px #1d4ed853}
+    #finishBtn{background:linear-gradient(180deg,var(--accent),var(--accent-deep));box-shadow:0 7px 12px #fb71855a}
+    .btn:active{transform:scale(.98)}
+
+    main{flex:1;display:flex;flex-direction:column;gap:10px;padding:0}
+
+    .canvas-wrap{
+      position:relative;
+      border-radius:18px;
+      height:clamp(330px,58vh,620px);
+      background:
+        repeating-linear-gradient(90deg,transparent 0 30px,#ffffff40 30px 31px),
+        linear-gradient(180deg,#fff,#fff8f1);
+      box-shadow:0 12px 26px #0b3a6b1f;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border:3px solid #fff;
+    }
+
+    .sketch-picker{
+      display:flex;
+      gap:8px;
+      padding:10px;
+      align-items:center;
+      justify-content:flex-start;
+      overflow:auto;
+      border-radius:14px;
+      background:#f8fbff;
+      border:2px solid #d8ecff;
+      scrollbar-width:thin;
+    }
+
+    .sketch-btn{
+      border:2px solid #d8e8ff;
+      background:#fff;
+      color:#214666;
+      border-radius:999px;
+      padding:7px 12px;
+      white-space:nowrap;
+      font-weight:800;
+      font-family:inherit;
+      cursor:pointer;
+      transition:transform .14s ease, border-color .14s ease;
+    }
+
+    .sketch-btn.active{
+      border-color:#2563eb;
+      color:#1d4ed8;
+      box-shadow:0 0 0 3px #1d4ed82e;
+    }
+
+    .sketch-btn:active{transform:scale(.97)}
+
+    canvas{width:100%;height:100%;touch-action:none;display:block}
+
+    .palette{
+      display:flex;
+      gap:8px;
+      padding:10px;
+      align-items:center;
+      justify-content:flex-start;
+      overflow:auto;
+      border-radius:14px;
+      background:#f8fbff;
+      border:2px solid #d8ecff;
+      scrollbar-width:thin;
+    }
+
+    .color{
+      width:42px;
+      min-width:42px;
+      height:42px;
+      border-radius:12px;
+      border:3px solid #fff;
+      box-shadow:0 4px 10px rgba(2,6,23,0.12);
+      cursor:pointer;
+      transition:transform .14s ease, box-shadow .14s ease;
+    }
+
+    .color:active{transform:scale(.94)}
+    .color.selected{outline:3px solid #1d4ed8;box-shadow:0 0 0 4px #1d4ed835}
+
+    .tools{
+      display:grid;
+      grid-template-columns:auto 1fr auto;
+      gap:10px;
+      align-items:center;
+      padding:10px;
+      border-radius:14px;
+      background:#f8fbff;
+      border:2px solid #d8ecff;
+    }
+
+    .size{width:100%;padding:4px;border-radius:8px;border:1px solid #cfe3ff;text-align:center;accent-color:#2563eb}
+    .status{margin:0;text-align:center;color:var(--muted);font-weight:700}
+    .brush-value{font-weight:800;color:#1d4ed8;font-size:1.04rem;min-width:42px;text-align:right}
+
+    .cele{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:200;padding:14px;background:#082e5063}
+    .cele.show{display:flex}
+    .cele .card{background:#fffffffc;padding:20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.12);text-align:center;border:2px solid #d7eaff}
+    .ad-banner{height:54px;background:#fff;border-top:1px solid #eee;display:flex;align-items:center;justify-content:center}
+
+    .fixed-controls{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;background:linear-gradient(180deg,rgba(197,243,255,0),rgba(197,243,255,0.97));backdrop-filter:blur(4px)}
+
+    .fixed-controls .btn{width:100%}
+
+    .howto-btn{position:fixed;bottom:16px;right:16px;z-index:1001;background:linear-gradient(180deg,#ff7a59,#e85f3d);color:#fff;border:none;border-radius:50%;width:54px;height:54px;box-shadow:0 6px 14px rgba(0,0,0,0.18);font-size:1.5rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .howto-modal{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:1200;padding:14px}
+    .howto-modal.open{display:flex}
+    .howto-dialog{background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.13);padding:22px 18px 14px;max-width:390px;text-align:center;color:#18385a;border:2px solid #d8eaff}
+    .howto-dialog h2{margin-top:0;font-size:1.4em}
+    .howto-dialog button{margin-top:14px;background:#1d4ed8;color:#fff;border:none;border-radius:10px;padding:8px 22px;font-weight:700;cursor:pointer}
+
+    @keyframes fade-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+    @media(max-width:760px){
+      .paint-shell{padding:10px;border-radius:18px}
+      header{padding:6px 2px 10px}
+      .controls{width:100%;display:grid;grid-template-columns:1fr 1fr}
+      .btn{width:100%;padding:10px 12px}
+      .canvas-wrap{height:min(56vh,460px)}
+      .tools{grid-template-columns:1fr;gap:8px;text-align:center}
+      .brush-value{text-align:center}
+    }
+
+    @media(max-width:430px){
+      .paint-shell{width:min(100%,96vw);margin:10px auto}
+      .title-wrap{padding:7px 10px}
+      .title-icon{width:36px;height:36px;border-radius:10px}
+      .canvas-wrap{height:min(52vh,390px);border-radius:14px}
+      .color{width:38px;min-width:38px;height:38px;border-radius:10px}
+      .howto-btn{width:50px;height:50px;right:12px;bottom:12px}
+      .fixed-controls{grid-template-columns:1fr}
+      .status-row{grid-template-columns:1fr}
+    }
+  </style>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="paint-shell shell">
+      <header>
+        <div class="title-wrap">
+          <span class="title-icon">🖍️</span>
+          <h1>Coloring Time</h1>
+        </div>
+        <div class="controls">
+          <button id="clearBtn" class="btn">Clear</button>
+          <button id="finishBtn" class="btn">Finish</button>
+        </div>
+      </header>
+
+      <p class="helper">Choose colors and fill the sketch with your imagination.</p>
+
+      <div class="status-row">
+        <div class="stats">Sketch: <span id="activeSketch">Cat</span></div>
+        <div class="stats">Brush: <span id="activeBrush">8px</span></div>
+      </div>
+
+      <main>
+        <div class="canvas-wrap board">
+          <canvas id="canvas"></canvas>
+        </div>
+
+        <div class="sketch-picker" id="sketchPicker" aria-label="Sketch templates">
+          <!-- sketch buttons injected -->
+        </div>
+
+        <div class="palette" id="palette" aria-label="Color palette">
+          <!-- colors will be injected -->
+        </div>
+
+        <div class="tools">
+          <label class="status" for="sizeRange">Brush size</label>
+          <input id="sizeRange" class="size" type="range" min="2" max="40" value="8" />
+          <div id="brushValue" class="brush-value">8px</div>
+          <div id="status" class="status">Draw with finger or mouse</div>
+        </div>
+      </main>
+    </div>
+
+    <div class="fixed-controls">
+      <button id="clearBtnFixed" class="btn">Clear</button>
+      <button id="finishBtnFixed" class="btn">Finish</button>
+    </div>
+
+    <div class="ad-banner" aria-hidden="true">AD_BANNER_PLACEHOLDER</div>
+
+      <!-- How to Play Button and Modal -->
+      <button class="howto-btn" id="howtoBtn" title="How to Play" aria-label="How to Play">?</button>
+      <div class="howto-modal" id="howtoModal" role="dialog" aria-modal="true" aria-labelledby="howtoTitle">
+        <div class="howto-dialog">
+          <h2 id="howtoTitle">How to Play</h2>
+          <div id="howtoContent">
+            <!-- TODO: Insert game-specific instructions here -->
+            Select a color and draw on the canvas using your mouse or finger. Tap 'Clear' to erase or 'Finish' when done!
+          </div>
+          <button id="howtoClose">Close</button>
+        </div>
+      </div>
+      <script>
+        // How to Play modal logic
+        const howtoBtn = document.getElementById('howtoBtn');
+        const howtoModal = document.getElementById('howtoModal');
+        const howtoClose = document.getElementById('howtoClose');
+        howtoBtn.addEventListener('click', () => {
+          howtoModal.classList.add('open');
+        });
+        howtoClose.addEventListener('click', () => {
+          howtoModal.classList.remove('open');
+        });
+        howtoModal.addEventListener('click', (e) => {
+          if (e.target === howtoModal) howtoModal.classList.remove('open');
+        });
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') howtoModal.classList.remove('open');
+        });
+      </script>
+
+
+    <div id="cele" class="cele"><div class="card"><h2>Nice coloring! 🎉</h2><p>Well done — you can save or play another picture.</p></div></div>
+  </div>
+
+  <script>
+    (function(){
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      const paletteEl = document.getElementById('palette');
+      const sketchPicker = document.getElementById('sketchPicker');
+      const clearBtn = document.getElementById('clearBtn');
+      const finishBtn = document.getElementById('finishBtn');
+      const sizeRange = document.getElementById('sizeRange');
+      const status = document.getElementById('status');
+      const brushValue = document.getElementById('brushValue');
+      const cele = document.getElementById('cele');
+      const activeSketch = document.getElementById('activeSketch');
+      const activeBrush = document.getElementById('activeBrush');
+
+      const colors = ['#000000','#ffffff','#ff4d4f','#ff7a59','#ffd166','#60a5fa','#7bf1a8','#22c55e','#a78bfa','#f472b6','#8b5cf6','#14b8a6','#f43f5e','#f59e0b'];
+      const sketches = [
+        { name:'Cat', icon:'🐱', draw: drawCat },
+        { name:'Fish', icon:'🐟', draw: drawFish },
+        { name:'House', icon:'🏠', draw: drawHouse },
+        { name:'Rocket', icon:'🚀', draw: drawRocket },
+        { name:'Flower', icon:'🌸', draw: drawFlower },
+        { name:'Butterfly', icon:'🦋', draw: drawButterfly }
+      ];
+      let currentColor = colors[2];
+      let drawing = false; let last = null; let brush = parseInt(sizeRange.value,10);
+      let currentSketch = sketches[0];
+
+      // audio
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const audioCtx = AudioContext ? new AudioContext() : null;
+      function tapSound(){ if(!audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type='sine'; o.frequency.value=880; g.gain.value=0.02; o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.06); }
+      function finishSound(){ if(!audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type='sine'; o.frequency.value=660; g.gain.value=0.05; o.connect(g); g.connect(audioCtx.destination); o.start(); setTimeout(()=>o.stop(),200); }
+
+      // resize canvas to fit container (device pixels)
+      function resize(){ const rect = canvas.getBoundingClientRect(); const ratio = window.devicePixelRatio || 1; canvas.width = Math.floor(rect.width * ratio); canvas.height = Math.floor(rect.height * ratio); canvas.style.width = rect.width + 'px'; canvas.style.height = rect.height + 'px'; ctx.setTransform(ratio,0,0,ratio,0,0); redrawBackground(); }
+
+      function canvasSize(){
+        const rect = canvas.getBoundingClientRect();
+        return { w: rect.width, h: rect.height };
+      }
+
+      function sketchStroke(){
+        ctx.strokeStyle = '#9aa9bc';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+      }
+
+      function drawCircle(x,y,r){
+        ctx.beginPath();
+        ctx.arc(x,y,r,0,Math.PI*2);
+        ctx.stroke();
+      }
+
+      function drawCat(w,h){
+        const cx = w * 0.5, cy = h * 0.52;
+        const head = Math.min(w,h) * 0.22;
+        sketchStroke();
+        drawCircle(cx, cy, head);
+        ctx.beginPath();
+        ctx.moveTo(cx - head * 0.55, cy - head * 0.6);
+        ctx.lineTo(cx - head * 1.05, cy - head * 1.2);
+        ctx.lineTo(cx - head * 0.15, cy - head * 0.95);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx + head * 0.55, cy - head * 0.6);
+        ctx.lineTo(cx + head * 1.05, cy - head * 1.2);
+        ctx.lineTo(cx + head * 0.15, cy - head * 0.95);
+        ctx.closePath();
+        ctx.stroke();
+        drawCircle(cx - head * 0.45, cy - head * 0.1, head * 0.12);
+        drawCircle(cx + head * 0.45, cy - head * 0.1, head * 0.12);
+        drawCircle(cx, cy + head * 0.22, head * 0.08);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + head * 0.28);
+        ctx.lineTo(cx - head * 0.22, cy + head * 0.44);
+        ctx.moveTo(cx, cy + head * 0.28);
+        ctx.lineTo(cx + head * 0.22, cy + head * 0.44);
+        ctx.stroke();
+      }
+
+      function drawFish(w,h){
+        const cx = w * 0.5, cy = h * 0.52;
+        const rw = Math.min(w,h) * 0.25;
+        const rh = rw * 0.58;
+        sketchStroke();
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rw, rh, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx + rw, cy);
+        ctx.lineTo(cx + rw + rw * 0.55, cy - rh * 0.85);
+        ctx.lineTo(cx + rw + rw * 0.55, cy + rh * 0.85);
+        ctx.closePath();
+        ctx.stroke();
+        drawCircle(cx - rw * 0.42, cy - rh * 0.15, rh * 0.12);
+        ctx.beginPath();
+        ctx.moveTo(cx - rw * 0.1, cy);
+        ctx.quadraticCurveTo(cx + rw * 0.14, cy + rh * 0.25, cx + rw * 0.28, cy);
+        ctx.stroke();
+      }
+
+      function drawHouse(w,h){
+        const cx = w * 0.5, cy = h * 0.56;
+        const bw = Math.min(w,h) * 0.36;
+        const bh = bw * 0.72;
+        sketchStroke();
+        ctx.strokeRect(cx - bw / 2, cy - bh / 2, bw, bh);
+        ctx.beginPath();
+        ctx.moveTo(cx - bw * 0.58, cy - bh / 2);
+        ctx.lineTo(cx, cy - bh * 1.02);
+        ctx.lineTo(cx + bw * 0.58, cy - bh / 2);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.strokeRect(cx - bw * 0.12, cy + bh * 0.05, bw * 0.24, bh * 0.45);
+        ctx.strokeRect(cx - bw * 0.34, cy - bh * 0.22, bw * 0.22, bh * 0.22);
+        ctx.strokeRect(cx + bw * 0.12, cy - bh * 0.22, bw * 0.22, bh * 0.22);
+      }
+
+      function drawRocket(w,h){
+        const cx = w * 0.5, cy = h * 0.54;
+        const rw = Math.min(w,h) * 0.17;
+        const rh = rw * 2.3;
+        sketchStroke();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - rh * 0.75);
+        ctx.quadraticCurveTo(cx + rw, cy - rh * 0.4, cx + rw, cy + rh * 0.35);
+        ctx.lineTo(cx - rw, cy + rh * 0.35);
+        ctx.quadraticCurveTo(cx - rw, cy - rh * 0.4, cx, cy - rh * 0.75);
+        ctx.closePath();
+        ctx.stroke();
+        drawCircle(cx, cy - rh * 0.1, rw * 0.33);
+        ctx.beginPath();
+        ctx.moveTo(cx - rw, cy + rh * 0.1);
+        ctx.lineTo(cx - rw * 1.55, cy + rh * 0.45);
+        ctx.lineTo(cx - rw, cy + rh * 0.42);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx + rw, cy + rh * 0.1);
+        ctx.lineTo(cx + rw * 1.55, cy + rh * 0.45);
+        ctx.lineTo(cx + rw, cy + rh * 0.42);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx - rw * 0.32, cy + rh * 0.35);
+        ctx.lineTo(cx, cy + rh * 0.8);
+        ctx.lineTo(cx + rw * 0.32, cy + rh * 0.35);
+        ctx.closePath();
+        ctx.stroke();
+      }
+
+      function drawFlower(w,h){
+        const cx = w * 0.5, cy = h * 0.45;
+        const p = Math.min(w,h) * 0.1;
+        sketchStroke();
+        for(let i=0;i<8;i++){
+          const a = (Math.PI * 2 * i) / 8;
+          drawCircle(cx + Math.cos(a) * p * 1.55, cy + Math.sin(a) * p * 1.55, p * 0.86);
+        }
+        drawCircle(cx, cy, p * 0.92);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + p * 0.95);
+        ctx.lineTo(cx, h * 0.82);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx, h * 0.64);
+        ctx.quadraticCurveTo(cx - p * 1.4, h * 0.6, cx - p * 1.2, h * 0.72);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx, h * 0.7);
+        ctx.quadraticCurveTo(cx + p * 1.4, h * 0.66, cx + p * 1.1, h * 0.77);
+        ctx.stroke();
+      }
+
+      function drawButterfly(w,h){
+        const cx = w * 0.5, cy = h * 0.52;
+        const s = Math.min(w,h) * 0.16;
+        sketchStroke();
+        ctx.beginPath();
+        ctx.ellipse(cx - s * 0.85, cy - s * 0.35, s * 0.95, s * 0.75, -0.45, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(cx + s * 0.85, cy - s * 0.35, s * 0.95, s * 0.75, 0.45, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(cx - s * 0.75, cy + s * 0.55, s * 0.74, s * 0.58, 0.3, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(cx + s * 0.75, cy + s * 0.55, s * 0.74, s * 0.58, -0.3, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - s * 1.12);
+        ctx.lineTo(cx, cy + s * 1.08);
+        ctx.stroke();
+        drawCircle(cx, cy - s * 1.2, s * 0.18);
+      }
+
+      function drawActiveSketch(){
+        const size = canvasSize();
+        if (currentSketch && typeof currentSketch.draw === 'function') {
+          currentSketch.draw(size.w, size.h);
+        }
+      }
+
+      function redrawBackground(){ // simple lined paper background
+        const size = canvasSize();
+        ctx.clearRect(0,0,size.w,size.h);
+        ctx.fillStyle = '#fff'; ctx.fillRect(0,0,size.w,size.h);
+        const gap = 24;
+        ctx.strokeStyle = '#f3f4f6';
+        ctx.lineWidth = 1;
+        for(let y=gap;y<size.h;y+=gap){
+          ctx.beginPath();
+          ctx.moveTo(0,y);
+          ctx.lineTo(size.w,y);
+          ctx.stroke();
+        }
+        drawActiveSketch();
+      }
+
+      function startPoint(x,y){ drawing = true; last = {x,y}; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle = currentColor; ctx.lineWidth = brush; ctx.beginPath(); ctx.moveTo(x,y); status.textContent='Drawing...'; }
+      function drawPoint(x,y){ if(!drawing) return; ctx.lineTo(x,y); ctx.stroke(); last={x,y}; }
+      function endPoint(){ drawing=false; last=null; status.textContent='Great! Keep coloring'; }
+
+      // pointer handlers
+      canvas.addEventListener('pointerdown', function(ev){ ev.preventDefault(); if(audioCtx && audioCtx.state==='suspended') audioCtx.resume(); const r = canvas.getBoundingClientRect(); startPoint(ev.clientX - r.left, ev.clientY - r.top); }, {passive:false});
+      canvas.addEventListener('pointermove', function(ev){ if(!drawing) return; const r = canvas.getBoundingClientRect(); drawPoint(ev.clientX - r.left, ev.clientY - r.top); }, {passive:true});
+      window.addEventListener('pointerup', function(ev){ if(drawing){ endPoint(); } }, {passive:true});
+
+      // palette generation
+      colors.forEach(col=>{ const d=document.createElement('div'); d.className='color'; d.style.background = col; if(col===currentColor) d.classList.add('selected'); d.addEventListener('click', ()=>{ document.querySelectorAll('.color').forEach(c=>c.classList.remove('selected')); d.classList.add('selected'); currentColor = col; status.textContent='Color changed'; tapSound(); }); paletteEl.appendChild(d); });
+
+      sketches.forEach((sketch, idx) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'sketch-btn' + (idx === 0 ? ' active' : '');
+        b.textContent = sketch.icon + ' ' + sketch.name;
+        b.addEventListener('click', () => {
+          document.querySelectorAll('.sketch-btn').forEach((x) => x.classList.remove('active'));
+          b.classList.add('active');
+          currentSketch = sketch;
+          redrawBackground();
+          status.textContent = 'Sketch: ' + sketch.name;
+          if (activeSketch) activeSketch.textContent = sketch.name;
+          tapSound();
+        });
+        sketchPicker.appendChild(b);
+      });
+
+      sizeRange.addEventListener('input', ()=>{ brush = parseInt(sizeRange.value,10); if(brushValue) brushValue.textContent = brush + 'px'; if(activeBrush) activeBrush.textContent = brush + 'px'; status.textContent='Brush size: ' + brush; });
+      clearBtn.addEventListener('click', ()=>{ redrawBackground(); status.textContent='Canvas cleared'; tapSound(); });
+
+      finishBtn.addEventListener('click', ()=>{ finishSound(); cele.classList.add('show'); status.textContent='Awesome art! Saved to device'; setTimeout(()=>cele.classList.remove('show'),3000); // offer save
+        const data = canvas.toDataURL('image/png'); const a = document.createElement('a'); a.href=data; a.download='coloring.png'; a.style.display='none'; document.body.appendChild(a); a.click(); a.remove(); });
+
+      // initial setup
+      function init(){ // create a proportional canvas area
+        const wrap = canvas.parentElement; // ensure canvas fills
+        resize(); window.addEventListener('resize', resize); if(brushValue) brushValue.textContent = brush + 'px'; if(activeBrush) activeBrush.textContent = brush + 'px'; // draw a simple guide
+      }
+
+      init();
+
+      // expose for debugging
+      window.__coloring = { clear: redrawBackground, save: ()=>{ const d=canvas.toDataURL(); console.log('data',d.slice(0,80)); } };
+    })();
+  </script>
+  <script>
+    document.getElementById('clearBtnFixed').addEventListener('click', function(){
+      document.getElementById('clearBtn').click();
+    });
+    document.getElementById('finishBtnFixed').addEventListener('click', function(){
+      document.getElementById('finishBtn').click();
+    });
+  </script>
+  <div id="ageModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Age verification">
+    <div class="modal-content">
+      <h2>Are you a parent?</h2>
+      <p>Please enter your birth year to continue to parental settings.</p>
+      <input id="birthYear" type="number" placeholder="e.g. 1980" min="1900" max="2025" />
+      <div class="modal-actions">
+        <button id="ageSubmit">Confirm</button>
+        <button id="ageCancel" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <script type="module">
+    import { injectNavbar } from '/scripts/navbar-footer.js';
+    injectNavbar();
+    // Wire up parental modal logic after navbar injection
+    window.addEventListener('DOMContentLoaded', () => {
+      var parentBtn = document.getElementById('parent-btn');
+      if (parentBtn) {
+        parentBtn.addEventListener('click', function(){
+          if (typeof showParentalGate === 'function') showParentalGate();
+        });
+      }
+      var ageSubmit = document.getElementById('ageSubmit');
+      if (ageSubmit) {
+        ageSubmit.addEventListener('click', function(){
+          const year = parseInt(document.getElementById('birthYear').value || '0', 10);
+          if (isNaN(year)) return;
+          if (typeof handleParentalConfirm === 'function') handleParentalConfirm(year);
+        });
+      }
+      var ageCancel = document.getElementById('ageCancel');
+      if (ageCancel) {
+        ageCancel.addEventListener('click', function(){
+          if (typeof closeParentalModal === 'function') closeParentalModal();
+        });
+      }
+    });
+  </script>
+  <script src="/game-shell.js"></script>
+</body>
+</html>

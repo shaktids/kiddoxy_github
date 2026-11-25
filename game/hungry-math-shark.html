@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hungry Math Shark</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    :root {
+      --bg-top: #c7f5ff;
+      --bg-mid: #abdfff;
+      --bg-bottom: #8ac8ff;
+      --panel: #ffffffde;
+      --ink: #08345e;
+      --muted: #3a6385;
+      --accent: #2563eb;
+      --accent-2: #ff7a59;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: "Baloo 2", "Comic Sans MS", "Trebuchet MS", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 14% 12%, #ffffffbe 0 12%, transparent 13%),
+        radial-gradient(circle at 86% 9%, #fff3c69f 0 13%, transparent 14%),
+        linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 58%, var(--bg-bottom) 100%);
+    }
+    .wrap { min-height: 100vh; display: flex; flex-direction: column; }
+    .shell {
+      width: min(1020px, 96vw);
+      margin: 12px auto 14px;
+      padding: 12px;
+      border-radius: 24px;
+      border: 3px solid #ffffffc2;
+      background: var(--panel);
+      box-shadow: 0 18px 34px #124f9440;
+      backdrop-filter: blur(3px);
+      animation: hmsFade .4s ease-out;
+    }
+    header { padding: 6px 2px 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .title-wrap { display: inline-flex; align-items: center; gap: 10px; background: #ffffffed; border: 2px solid #d8eaff; border-radius: 999px; padding: 8px 12px; box-shadow: 0 8px 14px #2563eb2e; }
+    .title-icon { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; color: #fff; font-size: 1.15rem; background: linear-gradient(150deg, #3b82f6, #1d4ed8); }
+    header h1 { margin: 0; font-size: clamp(1.05rem, 3.7vw, 1.85rem); font-weight: 800; line-height: 1.1; }
+    .hud { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .pill { background: #ffffffde; border: 1px solid #d7e8ff; border-radius: 999px; padding: 7px 11px; font-size: 0.92rem; font-weight: 800; color: #1f4b78; }
+    .helper { margin-top: 2px; color: var(--muted); font-weight: 700; font-size: .95rem; text-align: center; }
+    .game-area { margin-top: 8px; }
+    .canvas-wrap {
+      width: 100%;
+      height: clamp(360px, 62vh, 700px);
+      border-radius: 18px;
+      overflow: hidden;
+      border: 3px solid #fff;
+      box-shadow: 0 12px 26px #0b3a6b1f;
+      background:
+        repeating-linear-gradient(90deg, transparent 0 30px, #ffffff40 30px 31px),
+        linear-gradient(180deg, #aee7ff, #8fd8ff);
+    }
+    canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+    .howto-btn { position: fixed; bottom: 16px; right: 16px; z-index: 1001; background: linear-gradient(180deg, #2563eb, #1e40af); color: #fff; border: none; border-radius: 50%; width: 54px; height: 54px; box-shadow: 0 6px 14px rgba(0,0,0,0.18); font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .howto-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 1200; padding: 14px; }
+    .howto-modal.open { display: flex; }
+    .howto-dialog { background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.13); padding: 22px 18px 14px; max-width: 390px; text-align: center; color: #18385a; border: 2px solid #d8eaff; }
+    .howto-dialog h2 { margin-top: 0; }
+    .howto-dialog button { margin-top: 14px; background: #1d4ed8; color: #fff; border: none; border-radius: 10px; padding: 8px 22px; font-weight: 700; cursor: pointer; }
+
+    @keyframes hmsFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 760px) {
+      .shell { padding: 10px; border-radius: 18px; }
+      .hud { width: 100%; }
+      .canvas-wrap { height: min(58vh, 520px); }
+    }
+
+    @media (max-width: 430px) {
+      .shell { width: min(100%, 96vw); margin: 10px auto; }
+      .title-icon { width: 34px; height: 34px; font-size: 1rem; }
+      .canvas-wrap { height: min(54vh, 430px); border-radius: 14px; }
+      .howto-btn { width: 50px; height: 50px; right: 12px; bottom: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="shell">
+      <header>
+        <div class="title-wrap">
+          <span class="title-icon">🦈</span>
+          <h1>Hungry Math Shark</h1>
+        </div>
+        <div class="hud">
+          <span class="pill" id="score">Score: 0</span>
+          <span class="pill" id="timer">Time: 60</span>
+        </div>
+      </header>
+      <div class="helper">Drag the correct answer bubble into the shark's mouth.</div>
+      <div class="game-area">
+        <div class="canvas-wrap">
+          <canvas id="gameCanvas" width="480" height="600"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- How to Play Button and Modal -->
+  <button class="howto-btn" id="howtoBtn" title="How to Play" aria-label="How to Play">?</button>
+  <div class="howto-modal" id="howtoModal" role="dialog" aria-modal="true" aria-labelledby="howtoTitle">
+    <div class="howto-dialog">
+      <h2 id="howtoTitle">How to Play</h2>
+      <div id="howtoContent">
+        Drag the correct answer bubble into the shark's mouth to feed it! If you are correct, you'll see "Yummy!" or "Tasty!". If you are wrong, you'll see "Oops! Wrong!". Try to get as many correct as you can before time runs out!
+      </div>
+      <button id="howtoClose">Close</button>
+    </div>
+  </div>
+  <script src="/scripts/hungry-math-shark.js"></script>
+  <script>
+    // How to Play modal logic
+    const howtoBtn = document.getElementById('howtoBtn');
+    const howtoModal = document.getElementById('howtoModal');
+    const howtoClose = document.getElementById('howtoClose');
+    howtoBtn.addEventListener('click', () => { howtoModal.classList.add('open'); });
+    howtoClose.addEventListener('click', () => { howtoModal.classList.remove('open'); });
+    howtoModal.addEventListener('click', (e) => { if (e.target === howtoModal) howtoModal.classList.remove('open'); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') howtoModal.classList.remove('open'); });
+  </script>
+  <div id="ageModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Age verification">
+    <div class="modal-content">
+      <h2>Are you a parent?</h2>
+      <p>Please enter your birth year to continue to parental settings.</p>
+      <input id="birthYear" type="number" placeholder="e.g. 1980" min="1900" max="2025" />
+      <div class="modal-actions">
+        <button id="ageSubmit">Confirm</button>
+        <button id="ageCancel" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <script type="module">
+    import { injectNavbar } from '/scripts/navbar-footer.js';
+    injectNavbar();
+    // Wire up parental modal logic after navbar injection
+    window.addEventListener('DOMContentLoaded', () => {
+      var parentBtn = document.getElementById('parent-btn');
+      if (parentBtn) {
+        parentBtn.addEventListener('click', function(){
+          if (typeof showParentalGate === 'function') showParentalGate();
+        });
+      }
+      var ageSubmit = document.getElementById('ageSubmit');
+      if (ageSubmit) {
+        ageSubmit.addEventListener('click', function(){
+          const year = parseInt(document.getElementById('birthYear').value || '0', 10);
+          if (isNaN(year)) return;
+          if (typeof handleParentalConfirm === 'function') handleParentalConfirm(year);
+        });
+      }
+      var ageCancel = document.getElementById('ageCancel');
+      if (ageCancel) {
+        ageCancel.addEventListener('click', function(){
+          if (typeof closeParentalModal === 'function') closeParentalModal();
+        });
+      }
+    });
+  </script>
+  <script src="/game-shell.js"></script>
+</body>
+</html>

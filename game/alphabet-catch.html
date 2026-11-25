@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+	<title>Alphabet Catch</title>
+	<link rel="stylesheet" href="/styles.css">
+	<style>
+		:root {
+			--bg-top: #7ee8fa;
+			--bg-bottom: #0369a1;
+			--surface: #ffffffea;
+			--ink: #0c3a47;
+			--muted: #0c5a7b;
+			--accent: #06b6d4;
+			--ok: #22c55e;
+			--warn: #dc2626;
+			--shadow: 0 14px 28px rgba(12, 58, 71, 0.16);
+		}
+
+		* { box-sizing: border-box; }
+
+		html, body {
+			height: 100%;
+			margin: 0;
+			font-family: "Baloo 2", "Trebuchet MS", "Comic Sans MS", sans-serif;
+			color: var(--ink);
+		}
+
+		body {
+			background:
+				radial-gradient(circle at 12% 12%, #ffffff d6 0 12%, transparent 13%),
+				radial-gradient(circle at 88% 16%, #d1f0ffb9 0 12%, transparent 13%),
+				linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+		}
+
+		.wrap {
+			min-height: 100vh;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.shell {
+			width: min(980px, 96vw);
+			margin: 12px auto;
+			padding: 12px;
+			border-radius: 22px;
+			background: var(--surface);
+			border: 2px solid #ffffffcc;
+			box-shadow: var(--shadow);
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+		}
+
+		header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 10px;
+			flex-wrap: wrap;
+			padding: 6px 2px 10px;
+		}
+
+		.title-wrap {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			background: #ffffffeb;
+			border: 2px solid #d1f0ff;
+			border-radius: 999px;
+			padding: 8px 12px;
+			box-shadow: 0 8px 14px #06b6d42e;
+		}
+
+		.title-icon {
+			width: 40px;
+			height: 40px;
+			border-radius: 11px;
+			display: grid;
+			place-items: center;
+			color: #fff;
+			font-size: 1.2rem;
+			font-weight: 800;
+			background: linear-gradient(150deg, #06b6d4, #0891b2);
+		}
+
+		h1 {
+			margin: 0;
+			font-size: clamp(1.05rem, 3.8vw, 1.8rem);
+			font-weight: 800;
+			line-height: 1.1;
+		}
+
+		.hud {
+			display: flex;
+			gap: 8px;
+			align-items: center;
+			flex-wrap: wrap;
+		}
+
+		.pill {
+			background: #ffffffde;
+			border: 1px solid #d1f0ff;
+			border-radius: 999px;
+			padding: 8px 12px;
+			font-size: 0.95em;
+			font-weight: 800;
+			color: var(--ink);
+		}
+
+		.btn {
+			background: linear-gradient(180deg, var(--accent), #0891b2);
+			color: #fff;
+			border: none;
+			border-radius: 12px;
+			padding: 10px 16px;
+			font-weight: 800;
+			cursor: pointer;
+			transition: transform 0.12s;
+			box-shadow: 0 6px 12px rgba(6, 182, 212, 0.24);
+		}
+
+		.btn:active { transform: scale(0.96); }
+
+		.btn.secondary {
+			background: #e5e7eb;
+			color: #111;
+		}
+
+		.helper {
+			text-align: center;
+			color: var(--muted);
+			font-size: 0.95em;
+			margin: 8px 0 12px;
+			font-weight: 600;
+		}
+
+		main {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			padding: 12px;
+		}
+
+		.game-area {
+			width: 100%;
+			max-width: 500px;
+			height: clamp(300px, 54vh, 520px);
+			border-radius: 18px;
+			background: linear-gradient(180deg, #e1f8ff 0%, #cff0ff 100%);
+			box-shadow: 0 12px 26px rgba(12, 58, 71, 0.12);
+			border: 3px solid #fff;
+			position: relative;
+			overflow: hidden;
+		}
+
+		.game-area::before {
+			content: "";
+			position: absolute;
+			top: 14px;
+			right: 16px;
+			width: 100px;
+			height: 80px;
+			border-radius: 50%;
+			background: #ffffffcc;
+			opacity: 0.6;
+			pointer-events: none;
+		}
+
+		.target-display {
+			position: absolute;
+			top: 12px;
+			left: 50%;
+			transform: translateX(-50%);
+			background: #06b6d4;
+			color: #fff;
+			padding: 6px 14px;
+			border-radius: 12px;
+			font-size: 1.4em;
+			font-weight: 800;
+			box-shadow: 0 4px 8px rgba(12, 58, 71, 0.2);
+			z-index: 10;
+		}
+
+		.basket {
+			position: absolute;
+			bottom: 10px;
+			left: 50%;
+			transform: translateX(-50%);
+			width: 80px;
+			height: 60px;
+			background: linear-gradient(135deg, #0891b2, #0369a1);
+			border-radius: 8px 8px 2px 2px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: #fff;
+			font-size: 1.4em;
+			z-index: 5;
+			border: 3px solid #fff;
+		}
+
+		.falling-item {
+			position: absolute;
+			font-size: 2em;
+			cursor: pointer;
+			user-select: none;
+			pointer-events: auto;
+			filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+		}
+
+		.status {
+			padding: 12px;
+			text-align: center;
+			color: var(--muted);
+			font-weight: 600;
+			font-size: 0.95em;
+			min-height: 20px;
+		}
+
+		.modal,
+		.overlay {
+			position: fixed;
+			inset: 0;
+			background: rgba(0, 0, 0, 0.45);
+			display: none;
+			align-items: center;
+			justify-content: center;
+			z-index: 1200;
+			padding: 14px;
+		}
+
+		.modal.open,
+		.overlay.open {
+			display: flex;
+		}
+
+		.dialog {
+			background: var(--surface);
+			border-radius: 16px;
+			box-shadow: var(--shadow);
+			padding: 20px;
+			max-width: 400px;
+			text-align: center;
+			border: 2px solid #ffffffcc;
+		}
+
+		.dialog h2 {
+			margin: 0 0 10px;
+			color: var(--ink);
+			font-size: 1.4em;
+		}
+
+		.dialog p {
+			margin: 0;
+			color: var(--muted);
+		}
+
+		.howto-btn {
+			position: fixed;
+			bottom: 24px;
+			right: 24px;
+			z-index: 1001;
+			background: linear-gradient(180deg, var(--accent), #0891b2);
+			color: #fff;
+			border: none;
+			border-radius: 50%;
+			width: 56px;
+			height: 56px;
+			box-shadow: 0 6px 18px rgba(6, 182, 212, 0.3);
+			font-size: 28px;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transition: transform 0.12s;
+		}
+
+		.howto-btn:active { transform: scale(0.92); }
+
+		.howto-modal {
+			position: fixed;
+			inset: 0;
+			background: rgba(0, 0, 0, 0.45);
+			display: none;
+			align-items: center;
+			justify-content: center;
+			z-index: 1200;
+			padding: 14px;
+		}
+
+		.howto-modal.open { display: flex; }
+
+		.howto-dialog {
+			background: var(--surface);
+			border-radius: 16px;
+			box-shadow: var(--shadow);
+			padding: 24px 18px 18px;
+			max-width: 380px;
+			text-align: center;
+			border: 2px solid #ffffffcc;
+		}
+
+		.howto-dialog h2 {
+			margin: 0 0 12px;
+			color: var(--ink);
+		}
+
+		.howto-dialog p {
+			margin: 0 0 18px;
+			color: var(--muted);
+			line-height: 1.5;
+		}
+
+		.howto-close {
+			background: linear-gradient(180deg, var(--accent), #0891b2);
+			color: #fff;
+			border: none;
+			border-radius: 10px;
+			padding: 8px 20px;
+			font-weight: 700;
+			cursor: pointer;
+			font-family: inherit;
+		}
+
+		.ad-banner {
+			height: 54px;
+			background: #fff;
+			border-top: 1px solid #eee;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		@media (max-width: 700px) {
+			.shell { padding: 10px; border-radius: 18px; }
+		}
+
+		@media (max-width: 600px) {
+			h1 { font-size: 1.2em; }
+			.target-display { font-size: 1.2em; }
+		}
+
+		@media (max-width: 480px) {
+			.howto-btn { width: 50px; height: 50px; right: 16px; bottom: 16px; font-size: 24px; }
+		}
+	</style>
+</head>
+<body>
+	<div class="wrap">
+		<div class="shell">
+			<header>
+				<div class="title-wrap">
+					<span class="title-icon">🌊</span>
+					<h1>Alphabet Catch</h1>
+				</div>
+				<div class="hud">
+					<div class="pill">Score: <span id="score">0</span></div>
+					<div class="pill">Caught: <span id="caught">0</span></div>
+					<button class="btn" id="startBtn">Start</button>
+				</div>
+			</header>
+
+			<div class="helper">Catch the falling letters in order!</div>
+
+			<main>
+				<div class="game-area" id="gameArea">
+					<div class="target-display" id="target">A</div>
+					<div class="basket" id="basket">🧺</div>
+				</div>
+			</main>
+
+			<div class="status" id="message">Ready to play?</div>
+		</div>
+
+		<div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+	</div>
+
+	<div id="modal" class="modal" role="dialog" aria-modal="true">
+		<div class="dialog">
+			<h2 id="resultTitle">Game Over! 🎉</h2>
+			<p id="resultDesc">You caught <span id="totalCaught">0</span> letters!</p>
+			<div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+				<button class="btn" id="btnPlayAgain">Play Again</button>
+				<a class="btn secondary" href="/index.html">Home</a>
+			</div>
+		</div>
+	</div>
+
+	<button class="howto-btn" id="howtoBtn" title="How to Play" aria-label="How to Play">?</button>
+	<div class="howto-modal" id="howtoModal" role="dialog" aria-modal="true" aria-labelledby="howtoTitle">
+		<div class="howto-dialog">
+			<h2 id="howtoTitle">How to Play</h2>
+			<p>Move the basket left and right to catch the falling letters in order! Catch all 26 letters from A to Z to complete the game!</p>
+			<button id="howtoClose" class="howto-close">Got It</button>
+		</div>
+	</div>
+
+	<script>
+		let _audioCtx=null;
+		function getAC(){
+			const AC=window.AudioContext||window.webkitAudioContext;
+			if(!_audioCtx && AC){ _audioCtx=new AC(); }
+			return _audioCtx;
+		}
+		function beep(freq=620, dur=0.08, type='sine', vol=0.25){
+			const ac=getAC();
+			if(!ac) return;
+			if(ac.state==='suspended'){ try{ac.resume();}catch(_){} }
+			const o=ac.createOscillator(), g=ac.createGain();
+			o.type=type;
+			o.frequency.value=freq;
+			const t=ac.currentTime;
+			g.gain.setValueAtTime(vol, t);
+			g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+			o.connect(g).connect(ac.destination);
+			o.start(t);
+			o.stop(t+dur);
+		}
+
+		const gameArea = document.getElementById('gameArea');
+		const basket = document.getElementById('basket');
+		const target = document.getElementById('target');
+		const scoreEl = document.getElementById('score');
+		const caughtEl = document.getElementById('caught');
+		const modal = document.getElementById('modal');
+		const resultTitle = document.getElementById('resultTitle');
+		const totalCaughtEl = document.getElementById('totalCaught');
+
+		const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+		let currentIdx = 0, basketX = 0, score = 0, caught = 0, gameRunning = false;
+		let gameTimer = null, spawnTimer = null;
+		let keys = {};
+
+		document.addEventListener('keydown', (e)=>{
+			keys[e.key.toLowerCase()] = true;
+		});
+		document.addEventListener('keyup', (e)=>{
+			keys[e.key.toLowerCase()] = false;
+		});
+
+		function updateBasket(){
+			if(keys['arrowleft'] || keys['a']) basketX = Math.max(-50, basketX - 8);
+			if(keys['arrowright'] || keys['d']) basketX = Math.min(50, basketX + 8);
+			basket.style.left = 'calc(50% + ' + basketX + 'px)';
+		}
+
+		function checkCatch(item){
+			const itemRect = item.getBoundingClientRect();
+			const basketRect = basket.getBoundingClientRect();
+			
+			if(itemRect.bottom >= basketRect.top &&
+			   itemRect.left < basketRect.right &&
+			   itemRect.right > basketRect.left){
+				item.remove();
+				score += 10;
+				caught++;
+				scoreEl.textContent = score;
+				caughtEl.textContent = caught;
+				beep(800, 0.08, 'sine', 0.24);
+				
+				if(caught === LETTERS.length){
+					endGame(true);
+				}else{
+					currentIdx++;
+					target.textContent = LETTERS[currentIdx];
+				}
+			}
+		}
+
+		function spawnLetter(){
+			if(!gameRunning) return;
+			const letter = LETTERS[currentIdx];
+			const item = document.createElement('div');
+			item.className='falling-item';
+			item.textContent = letter;
+			item.style.left = Math.random()*95 + '%';
+			item.style.top = '0px';
+			gameArea.appendChild(item);
+			
+			let top = 0;
+			const fall = setInterval(()=>{
+				top += 6;
+				item.style.top = top + 'px';
+				checkCatch(item);
+				
+				if(top > gameArea.clientHeight){
+					clearInterval(fall);
+					if(item && item.parentNode) item.remove();
+				}
+			}, 50);
+		}
+
+		function startGame(){
+			if(gameRunning) return;
+			gameRunning = true;
+			currentIdx = 0;
+			score = 0;
+			caught = 0;
+			scoreEl.textContent = score;
+			caughtEl.textContent = caught;
+			target.textContent = LETTERS[currentIdx];
+			modal.classList.remove('open');
+			
+			gameTimer = setInterval(updateBasket, 30);
+			spawnTimer = setInterval(spawnLetter, 800);
+		}
+
+		function endGame(won){
+			gameRunning = false;
+			if(gameTimer) clearInterval(gameTimer);
+			if(spawnTimer) clearInterval(spawnTimer);
+			
+			if(won){
+				resultTitle.textContent = 'You Won! 🎉';
+				beep(820, 0.12, 'sine', 0.24);
+			}else{
+				resultTitle.textContent = 'Game Over';
+			}
+			totalCaughtEl.textContent = caught;
+			modal.classList.add('open');
+		}
+
+		document.getElementById('startBtn').addEventListener('click', startGame);
+		document.getElementById('btnPlayAgain').addEventListener('click', startGame);
+
+		document.addEventListener('DOMContentLoaded', function() {
+			const howtoBtn = document.getElementById('howtoBtn');
+			const howtoModal = document.getElementById('howtoModal');
+			const howtoClose = document.getElementById('howtoClose');
+			howtoBtn.addEventListener('click', () => {
+				howtoModal.classList.add('open');
+			});
+			howtoClose.addEventListener('click', () => {
+				howtoModal.classList.remove('open');
+			});
+			howtoModal.addEventListener('click', (e) => {
+				if(e.target === howtoModal) howtoModal.classList.remove('open');
+			});
+		});
+	</script>
+
+	<div id="ageModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Age verification">
+		<div class="modal-content">
+			<h2>Are you a parent?</h2>
+			<p>Please enter your birth year to continue to parental settings.</p>
+			<input id="birthYear" type="number" placeholder="e.g. 1980" min="1900" max="2025" />
+			<div class="modal-actions">
+				<button id="ageSubmit">Confirm</button>
+				<button id="ageCancel" class="secondary">Cancel</button>
+			</div>
+		</div>
+	</div>
+	<script type="module">
+		import { injectNavbar } from '/scripts/navbar-footer.js';
+		injectNavbar();
+		window.addEventListener('DOMContentLoaded', () => {
+			var parentBtn = document.getElementById('parent-btn');
+			if (parentBtn) {
+				parentBtn.addEventListener('click', function(){
+					if (typeof showParentalGate === 'function') showParentalGate();
+				});
+			}
+			var ageSubmit = document.getElementById('ageSubmit');
+			if (ageSubmit) {
+				ageSubmit.addEventListener('click', function(){
+					const year = parseInt(document.getElementById('birthYear').value || '0', 10);
+					if (isNaN(year)) return;
+					if (typeof handleParentalConfirm === 'function') handleParentalConfirm(year);
+				});
+			}
+			var ageCancel = document.getElementById('ageCancel');
+			if (ageCancel) {
+				ageCancel.addEventListener('click', function(){
+					if (typeof closeParentalModal === 'function') closeParentalModal();
+				});
+			}
+		});
+	</script>
+	<script src="/game-shell.js"></script>
+</body>
+</html>

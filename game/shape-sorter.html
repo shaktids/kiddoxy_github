@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shape Sorter</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    :root {
+      --bg-top: #e9d5ff;
+      --bg-bottom: #d8b4fe;
+      --surface: #ffffffea;
+      --ink: #581c87;
+      --muted: #7c3aed;
+      --accent: #a855f7;
+      --accent-2: #d946ef;
+      --shadow: 0 14px 28px rgba(88, 28, 135, 0.14);
+      --shape-size: 88px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: "Baloo 2", "Trebuchet MS", "Comic Sans MS", sans-serif;
+      color: var(--ink);
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 88% 14%, #ffffffcc 0 12%, transparent 13%),
+        radial-gradient(circle at 10% 85%, #fef3c7ba 0 14%, transparent 15%),
+        linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+    }
+
+    .wrap {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .shell {
+      width: min(980px, 96vw);
+      margin: 12px auto;
+      padding: 12px;
+      border-radius: 22px;
+      background: var(--surface);
+      border: 2px solid #ffffffcc;
+      box-shadow: var(--shadow);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .title-icon {
+      font-size: 2em;
+      flex-shrink: 0;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: 1.4em;
+      font-weight: 800;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .stats {
+      background: rgba(168, 85, 247, 0.15);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-weight: 700;
+      font-size: 0.9em;
+      white-space: nowrap;
+      flex: 1;
+      min-width: 90px;
+      text-align: center;
+    }
+
+    .btn {
+      background: linear-gradient(180deg, var(--accent), #9333ea);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.12s, box-shadow 0.12s;
+      box-shadow: 0 6px 12px rgba(168, 85, 247, 0.24);
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn.secondary {
+      background: #f0f0f0;
+      color: var(--ink);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .helper {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95em;
+      margin: 8px 0 12px;
+      font-weight: 600;
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel h2 {
+      margin: 0 0 8px;
+      font-size: 1.1em;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .tray {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      align-content: flex-start;
+      flex: 1;
+      min-height: 280px;
+    }
+
+    .shape {
+      width: var(--shape-size);
+      height: var(--shape-size);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+      user-select: none;
+      cursor: grab;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+      box-shadow: 0 6px 14px rgba(168, 85, 247, 0.18);
+      border: 2px solid #e879f9;
+      transition: transform 0.1s, box-shadow 0.1s;
+      flex-shrink: 0;
+    }
+
+    .shape:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(168, 85, 247, 0.24);
+    }
+
+    .shape.dragging {
+      opacity: 0.9;
+      transform: scale(1.06);
+      cursor: grabbing;
+    }
+
+    .board {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      flex: 1;
+      min-height: 280px;
+      align-content: flex-start;
+    }
+
+    .hole {
+      position: relative;
+      border: 2px dashed #d8b4fe;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f5f3ff;
+      min-height: 100px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .hole.filled {
+      background: #e9d5ff;
+      border-color: #d946ef;
+      border-style: solid;
+    }
+
+    .snap {
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .result-modal,
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+      padding: 14px;
+    }
+
+    .result-modal.open,
+    .overlay.open {
+      display: flex;
+    }
+
+    .result-dialog,
+    .dialog {
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 20px;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .result-dialog h2,
+    .dialog h2 {
+      margin: 0 0 10px;
+      color: var(--ink);
+      font-size: 1.4em;
+    }
+
+    .result-dialog p,
+    .dialog p {
+      margin: 0 0 12px;
+      color: var(--muted);
+    }
+
+    .howto-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 1001;
+      background: linear-gradient(180deg, var(--accent), #9333ea);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      box-shadow: 0 6px 18px rgba(168, 85, 247, 0.3);
+      font-size: 28px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+
+    .howto-btn:active {
+      transform: scale(0.92);
+    }
+
+    .howto-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1202;
+      padding: 14px;
+    }
+
+    .howto-modal.open {
+      display: flex;
+    }
+
+    .howto-dialog {
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 20px;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .howto-dialog h2 {
+      margin: 0 0 12px;
+      color: var(--ink);
+    }
+
+    .howto-dialog p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .ad-banner {
+      height: 60px;
+      background: rgba(255, 255, 255, 0.5);
+      border-top: 1px solid rgba(255, 255, 255, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85em;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+
+    @media (max-width: 700px) {
+      :root { --shape-size: 76px; }
+      .stats {
+        padding: 6px 10px;
+        font-size: 0.85em;
+        min-width: 85px;
+      }
+      .btn {
+        padding: 8px 12px;
+        font-size: 0.9em;
+      }
+      .board {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      :root { --shape-size: 64px; }
+      main {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .shell {
+        width: min(100%, 96vw);
+        margin: 8px auto;
+        border-radius: 14px;
+        padding: 10px;
+      }
+      header {
+        margin-bottom: 10px;
+      }
+      .title-wrap h1 {
+        font-size: 1.2em;
+      }
+      .title-icon {
+        font-size: 1.6em;
+      }
+      .controls {
+        gap: 6px;
+        width: 100%;
+      }
+      .stats {
+        padding: 5px 10px;
+        font-size: 0.8em;
+        min-width: 80px;
+        flex: 1;
+      }
+      .btn {
+        padding: 7px 10px;
+        font-size: 0.85em;
+        flex: 1;
+        min-width: 70px;
+      }
+      .helper {
+        font-size: 0.85em;
+        margin: 6px 0 10px;
+      }
+      .panel {
+        padding: 10px;
+      }
+      .panel h2 {
+        font-size: 1em;
+        margin-bottom: 6px;
+      }
+      .tray {
+        gap: 8px;
+        min-height: 200px;
+      }
+      .board {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        min-height: 200px;
+      }
+      .hole {
+        min-height: 80px;
+      }
+      .howto-btn {
+        width: 48px;
+        height: 48px;
+        right: 10px;
+        bottom: 10px;
+        font-size: 24px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      :root { --shape-size: 56px; }
+      .title-wrap h1 {
+        font-size: 1.1em;
+      }
+      .title-icon {
+        font-size: 1.4em;
+      }
+      .controls {
+        flex-direction: column;
+      }
+      .stats,
+      .btn {
+        width: 100%;
+        text-align: center;
+      }
+      .tray {
+        min-height: 160px;
+      }
+      .board {
+        grid-template-columns: repeat(2, 1fr);
+        min-height: 160px;
+      }
+      .hole {
+        min-height: 70px;
+      }
+    }
+  </style>
+  <link rel="icon" href="/kiddoxy.png" type="image/png">
+  <link rel="manifest" href="/manifest.json">
+  <script>
+    // --- Audio helpers ---
+    let _audioCtx = null;
+    function getAudioCtx(){
+      if(!_audioCtx || _audioCtx.state === 'closed'){
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if(!AC) return null;
+        _audioCtx = new AC();
+      }
+      return _audioCtx;
+    }
+    function playBeep(freq=660, duration=0.08, type='sine', volume=0.25){
+      const ac = getAudioCtx(); if(!ac) return;
+      // Resume context on user gesture if needed
+      if(ac.state === 'suspended'){ try{ ac.resume(); }catch(_){} }
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = type; osc.frequency.value = freq;
+      const now = ac.currentTime;
+      gain.gain.setValueAtTime(volume, now);
+      // quick fade out to avoid clicks
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(now);
+      osc.stop(now + duration);
+    }
+
+    function shapeSVG(type, fill="#3B82F6"){
+      const size = 72;
+      if(type==='circle') return `<svg width="72" height="72" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><circle cx="36" cy="36" r="28" fill="${fill}"/></svg>`;
+      if(type==='square') return `<svg width="72" height="72" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><rect x="14" y="14" width="44" height="44" rx="8" fill="${fill}"/></svg>`;
+      if(type==='triangle') return `<svg width="72" height="72" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><polygon points="36,10 62,58 10,58" fill="${fill}"/></svg>`;
+      if(type==='star') return `<svg width="72" height="72" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><polygon points="36,8 42,28 64,28 46,40 52,60 36,48 20,60 26,40 8,28 30,28" fill="${fill}"/></svg>`;
+      if(type==='heart') return `<svg width="72" height="72" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><path d="M36 62s-22-14-26-26c-3-9 2-17 10-18 9-2 16 6 16 6s7-8 16-6c8 1 13 9 10 18-4 12-26 26-26 26z" fill="${fill}"/></svg>`;
+      return '';
+    }
+    function outlineSVG(type){
+      const size = 72; const col = '#94a3b8';
+      if(type==='circle') return `<svg width="72" height="72" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><circle cx="36" cy="36" r="28" fill="none" stroke="${col}" stroke-width="4"/></svg>`;
+      if(type==='square') return `<svg width="72" height="72" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><rect x="14" y="14" width="44" height="44" rx="8" fill="none" stroke="${col}" stroke-width="4"/></svg>`;
+      if(type==='triangle') return `<svg width="72" height="72" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><polygon points="36,10 62,58 10,58" fill="none" stroke="${col}" stroke-width="4"/></svg>`;
+      if(type==='star') return `<svg width="72" height="72" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><polygon points="36,8 42,28 64,28 46,40 52,60 36,48 20,60 26,40 8,28 30,28" fill="none" stroke="${col}" stroke-width="4"/></svg>`;
+      if(type==='heart') return `<svg width="72" height="72" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><path d="M36 62s-22-14-26-26c-3-9 2-17 10-18 9-2 16 6 16 6s7-8 16-6c8 1 13 9 10 18-4 12-26 26-26 26z" fill="none" stroke="${col}" stroke-width="4"/></svg>`;
+      return '';
+    }
+
+    const ALL_SHAPES = ['circle','square','triangle','star','heart'];
+    const COLORS = ['#ef4444','#f59e0b','#10b981','#3b82f6','#a855f7'];
+    let state = { shapes: [], filled:0, total:0, timeLeft:60, timerId:null, gameOver:false };
+
+    function pickShapes(){
+      // choose 3-5 unique shapes at random
+      const pool = [...ALL_SHAPES].sort(()=>Math.random()-0.5);
+      const count = 3 + Math.floor(Math.random()* (ALL_SHAPES.length - 2)); // 3..5
+      return pool.slice(0, count);
+    }
+
+    function initGame(){
+      const tray = document.getElementById('tray');
+      const board = document.getElementById('board');
+      tray.innerHTML=''; board.innerHTML='';
+      state.shapes = pickShapes();
+      state.total = state.shapes.length;
+      state.filled=0; state.gameOver=false; updateScore();
+      const shuffled=[...state.shapes].sort(()=>Math.random()-0.5);
+      shuffled.forEach((t)=>{
+        const hole=document.createElement('div'); hole.className='hole panel'; hole.dataset.type=t;
+        const ghost=document.createElement('div'); ghost.className='snap'; ghost.innerHTML=outlineSVG(t);
+        hole.appendChild(ghost); board.appendChild(hole);
+      });
+      const colors=[...COLORS].sort(()=>Math.random()-0.5);
+      state.shapes.forEach((t)=>{
+        const color=colors.shift()||COLORS[(Math.random()*COLORS.length)|0];
+        const el=document.createElement('div'); el.className='shape'; el.dataset.type=t; el.innerHTML=shapeSVG(t,color);
+        tray.appendChild(el);
+      });
+      enableDragging(); resetTimer(60);
+    }
+    function updateScore(){ document.getElementById('score').textContent = `${state.filled}/${state.total}`; }
+    function resetTimer(seconds){
+      state.timeLeft=seconds; const t=document.getElementById('time'); t.textContent=`${state.timeLeft}s`; t.style.color='#111';
+      if(state.timerId) clearInterval(state.timerId);
+      state.timerId=setInterval(()=>{
+        state.timeLeft-=1; t.textContent=`${state.timeLeft}s`; if(state.timeLeft<=10){ t.style.color='var(--warn)'; }
+        if(state.timeLeft<=0){ clearInterval(state.timerId); endGame(false); }
+      },1000);
+    }
+    function endGame(won){
+      state.gameOver=true; if(state.timerId) clearInterval(state.timerId);
+      document.querySelectorAll('.shape').forEach(s=>s.style.pointerEvents='none');
+      const modal=document.getElementById('cele'); modal.classList.add('open');
+      document.getElementById('resultTitle').textContent = won ? 'You Win! 🎉' : 'Time\'s Up! ⏲️';
+      document.getElementById('resultDesc').textContent = won ? 'Excellent sorting! Want to play again?' : 'Try again and sort them faster!';
+      if(won && window.Celebration){ try{ window.Celebration.celebrate(); }catch(_){} }
+    }
+    function enableDragging(){
+      Array.from(document.querySelectorAll('.shape')).forEach(el=>{
+        let startX=0,startY=0,dragging=false,prevParent=null;
+        el.addEventListener('pointerdown',(e)=>{
+          if(state.gameOver) return; el.setPointerCapture(e.pointerId); dragging=true; prevParent=el.parentElement;
+          const r=el.getBoundingClientRect(); startX=e.clientX - r.left; startY=e.clientY - r.top;
+          el.classList.add('dragging'); el.style.position='fixed'; el.style.left=`${r.left}px`; el.style.top=`${r.top}px`; el.style.zIndex=1000;
+          // sound on drag start
+          playBeep(720, 0.08, 'triangle', 0.22);
+        });
+        el.addEventListener('pointermove',(e)=>{
+          if(!dragging) return; el.style.left=`${e.clientX - startX}px`; el.style.top=`${e.clientY - startY}px`;
+        });
+        el.addEventListener('pointerup',(e)=>{
+          if(!dragging) return; dragging=false; el.classList.remove('dragging');
+          // Temporarily disable pointer events on the dragged element so we can hit what's underneath
+          el.style.pointerEvents = 'none';
+          const drop = document.elementFromPoint(e.clientX, e.clientY);
+          const hole = drop && drop.closest && drop.closest('.hole');
+          // Restore pointer events for cleanup
+          el.style.pointerEvents = '';
+          try{ el.releasePointerCapture && el.releasePointerCapture(e.pointerId); }catch(_){}
+          if(hole && !hole.classList.contains('filled') && hole.dataset.type === el.dataset.type){
+            hole.classList.add('filled');
+            hole.querySelector('.snap').innerHTML = el.innerHTML;
+            playBeep(540, 0.09, 'sine', 0.26);
+            el.remove();
+            state.filled += 1; updateScore(); if(state.filled === state.total){ endGame(true); }
+          }else{
+            playBeep(240, 0.07, 'sawtooth', 0.18);
+            el.style.position=''; el.style.left=''; el.style.top=''; el.style.zIndex='';
+            prevParent && prevParent.appendChild(el);
+          }
+        });
+      });
+    }
+    // --- Event listeners ---
+    document.addEventListener('DOMContentLoaded', ()=>{
+      initGame();
+      document.getElementById('newBtn').addEventListener('click', initGame);
+      document.getElementById('celebrateNext').addEventListener('click', ()=>{
+        document.getElementById('cele').classList.remove('open');
+        initGame();
+      });
+      document.getElementById('howtoBtn').addEventListener('click', ()=>{
+        document.getElementById('howtoModal').classList.add('open');
+      });
+      document.getElementById('howtoClose').addEventListener('click', ()=>{
+        document.getElementById('howtoModal').classList.remove('open');
+      });
+    });
+  </script>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="shell">
+      <header>
+        <div class="title-wrap">
+          <span class="title-icon">🎨</span>
+          <h1>Shape Sorter</h1>
+        </div>
+        <div class="controls">
+          <div class="stats">Time: <strong id="time">60s</strong></div>
+          <div class="stats">Sorted: <strong id="score">0/3</strong></div>
+          <button id="newBtn" class="btn">Shuffle</button>
+        </div>
+      </header>
+
+      <p class="helper">Drag each shape into its matching hole. Sort them all before time runs out!</p>
+
+      <main>
+        <section class="panel">
+          <h2>Shapes</h2>
+          <div id="tray" class="tray"></div>
+        </section>
+        <section class="panel">
+          <h2>Holes</h2>
+          <div id="board" class="board"></div>
+        </section>
+      </main>
+
+      <div class="ad-banner" aria-hidden="true">AD_BANNER_PLACEHOLDER</div>
+    </div>
+  </div>
+
+  <div id="cele" class="result-modal">
+    <div class="result-dialog">
+      <h2 id="resultTitle">You Win! 🎉</h2>
+      <p id="resultDesc">Great sorting! Want to play again?</p>
+      <div style="margin-top:12px;">
+        <button id="celebrateNext" class="btn">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="howto-btn" id="howtoBtn" title="How to Play" aria-label="How to Play">?</button>
+  <div id="howtoModal" class="howto-modal">
+    <div class="howto-dialog">
+      <h2>How to Play</h2>
+      <p>Drag each colorful shape from the left tray into the matching hole on the right board. Complete all matches before time runs out!</p>
+      <button id="howtoClose" class="btn" style="margin-top:12px;">Got It!</button>
+    </div>
+  </div>
+<div id="ageModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Age verification">
+    <div class="modal-content">
+      <h2>Are you a parent?</h2>
+      <p>Please enter your birth year to continue to parental settings.</p>
+      <input id="birthYear" type="number" placeholder="e.g. 1980" min="1900" max="2025" />
+      <div class="modal-actions">
+        <button id="ageSubmit">Confirm</button>
+        <button id="ageCancel" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <script type="module">
+    import { injectNavbar } from '/scripts/navbar-footer.js';
+    injectNavbar();
+    // Wire up parental modal logic after navbar injection
+    window.addEventListener('DOMContentLoaded', () => {
+      var parentBtn = document.getElementById('parent-btn');
+      if (parentBtn) {
+        parentBtn.addEventListener('click', function(){
+          if (typeof showParentalGate === 'function') showParentalGate();
+        });
+      }
+      var ageSubmit = document.getElementById('ageSubmit');
+      if (ageSubmit) {
+        ageSubmit.addEventListener('click', function(){
+          const year = parseInt(document.getElementById('birthYear').value || '0', 10);
+          if (isNaN(year)) return;
+          if (typeof handleParentalConfirm === 'function') handleParentalConfirm(year);
+        });
+      }
+      var ageCancel = document.getElementById('ageCancel');
+      if (ageCancel) {
+        ageCancel.addEventListener('click', function(){
+          if (typeof closeParentalModal === 'function') closeParentalModal();
+        });
+      }
+    });
+  </script>
+  <script src="/game-shell.js"></script>
+</body>
+</html>
+

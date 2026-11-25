@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Missing Letter</title>
+  <link rel="stylesheet" href="/styles/games.css">
+  <style>
+    .panel{background:#fff;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.08);padding:16px}
+    main{flex:1;display:grid;grid-template-columns:300px 1fr;gap:16px;padding:12px}
+    @media (max-width:900px){ main{grid-template-columns:1fr;grid-auto-rows:minmax(260px,auto)} }
+    .hud{display:grid;gap:10px}
+    .stat{background:#f8fafc;border-radius:12px;padding:12px;font-weight:700}
+    .word-box{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:8px 0 16px}
+    .slot{width:54px;height:54px;border-radius:12px;background:#eff6ff;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#0f172a}
+    .slot.blank{background:#fde68a;color:#0f172a}
+    .choices{display:grid;grid-template-columns:repeat(4,minmax(64px,1fr));gap:10px;max-width:420px;margin:0 auto}
+    .choice{min-height:60px;border:none;border-radius:14px;font-size:24px;font-weight:900;background:#3b82f6;color:#fff;box-shadow:0 6px 14px rgba(59,130,246,.18)}
+    .choice:disabled{opacity:.45}
+    .choice.wrong{background:#ef4444}
+    .choice.correct{background:#10b981}
+    .message{min-height:28px;text-align:center;font-weight:700;color:#334155}
+    .word-panel{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px}
+    .clue-card{display:flex;flex-direction:column;align-items:center;gap:10px;background:#f8fafc;border-radius:14px;padding:14px;width:min(100%,420px)}
+    .clue-image{width:100%;max-width:240px;aspect-ratio:1/1;object-fit:cover;border-radius:14px;background:#e0e7ff;box-shadow:0 6px 16px rgba(59,130,246,.12)}
+    .subtitle{color:#64748b;text-align:center;margin:0}
+  </style>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body class="game-shell">
+  <header class="game-header">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <h1 style="margin:0">Missing Letter</h1>
+      <a href="/index.html" class="small-btn" style="text-decoration:none;display:inline-block">Home</a>
+    </div>
+  </header>
+
+  <main class="game-root">
+    <section class="panel hud">
+      <div class="stat">Score: <span id="score">0</span></div>
+      <div class="stat">Streak: <span id="streak">0</span></div>
+      <div class="stat">Word: <span id="round">1</span></div>
+      <button id="restart" class="small-btn">Restart</button>
+      <p class="subtitle">Tap the letter that finishes the word.</p>
+    </section>
+
+    <section class="panel word-panel">
+      <div id="message" class="message">Find the missing letter.</div>
+      <div class="clue-card">
+        <img id="clueImage" class="clue-image" alt="" />
+      </div>
+      <div id="word" class="word-box" aria-live="polite"></div>
+      <div id="choices" class="choices" role="group" aria-label="Letter choices"></div>
+    </section>
+  </main>
+
+  <div id="banner">Ad banner</div>
+
+  <script src="/scripts/game-core.js"></script>
+  <script>
+    (function(){
+      const WORDS = [
+        { word: 'CAT', clue: 'A tiny pet that purrs.', emoji: '🐱', color: '#f9a8d4' },
+        { word: 'DOG', clue: 'A friendly pet that barks.', emoji: '🐶', color: '#fdba74' },
+        { word: 'SUN', clue: 'The bright star in the sky.', emoji: '☀️', color: '#fde68a' },
+        { word: 'TREE', clue: 'It has branches and leaves.', emoji: '🌳', color: '#bbf7d0' },
+        { word: 'FISH', clue: 'An animal that swims in water.', emoji: '🐟', color: '#67e8f9' },
+        { word: 'BIRD', clue: 'A flying animal with feathers.', emoji: '🐦', color: '#93c5fd' },
+        { word: 'MOON', clue: 'It shines at night.', emoji: '🌙', color: '#c7d2fe' },
+        { word: 'BOOK', clue: 'You read stories in it.', emoji: '📚', color: '#c4b5fd' },
+        { word: 'APPLE', clue: 'A crunchy fruit.', emoji: '🍎', color: '#fda4af' },
+        { word: 'HOUSE', clue: 'A place where people live.', emoji: '🏠', color: '#fde68a' },
+        { word: 'SMILE', clue: 'A happy face expression.', emoji: '😊', color: '#fde68a' },
+        { word: 'TRAIN', clue: 'It runs on tracks.', emoji: '🚆', color: '#fecaca' },
+        { word: 'PLANT', clue: 'A green thing that grows in a pot or garden.', emoji: '🪴', color: '#86efac' },
+        { word: 'WATER', clue: 'You drink it every day.', emoji: '💧', color: '#bfdbfe' },
+        { word: 'PANDA', clue: 'A black-and-white bear.', emoji: '🐼', color: '#e2e8f0' },
+        { word: 'CLOUD', clue: 'It floats in the sky and can bring rain.', emoji: '☁️', color: '#e2e8f0' },
+        { word: 'SNAKE', clue: 'A long animal that slithers.', emoji: '🐍', color: '#86efac' },
+        { word: 'GRAPE', clue: 'Small sweet fruit that grows in bunches.', emoji: '🍇', color: '#ddd6fe' },
+        { word: 'ROBOT', clue: 'A machine helper.', emoji: '🤖', color: '#cbd5e1' },
+        { word: 'FROG', clue: 'A jumping animal that loves ponds.', emoji: '🐸', color: '#86efac' },
+        { word: 'CAR', clue: 'A vehicle with wheels.', emoji: '🚗', color: '#bfdbfe' },
+        { word: 'BALL', clue: 'You can throw, kick, or bounce it.', emoji: '⚽', color: '#93c5fd' },
+        { word: 'DUCK', clue: 'A bird that quacks.', emoji: '🦆', color: '#fde68a' },
+        { word: 'STAR', clue: 'A shape that twinkles in the sky.', emoji: '⭐', color: '#fef08a' },
+        { word: 'CUP', clue: 'You drink from it.', emoji: '☕', color: '#fed7aa' },
+        { word: 'DRUM', clue: 'You tap it to make music.', emoji: '🥁', color: '#fde68a' },
+        { word: 'SNOW', clue: 'Cold white flakes fall from the sky.', emoji: '❄️', color: '#e0f2fe' },
+        { word: 'FROST', clue: 'Ice crystals on a cold morning.', emoji: '🧊', color: '#dbeafe' },
+        { word: 'CLOWN', clue: 'A funny performer with colorful clothes.', emoji: '🤡', color: '#fbcfe8' }
+      ];
+
+      const state = {
+        score: 0,
+        streak: 0,
+        round: 1,
+        currentWord: '',
+        missingIndex: 0,
+        answer: '',
+        locked: false
+      };
+
+      const scoreEl = document.getElementById('score');
+      const streakEl = document.getElementById('streak');
+      const roundEl = document.getElementById('round');
+      const messageEl = document.getElementById('message');
+      const wordEl = document.getElementById('word');
+      const choicesEl = document.getElementById('choices');
+      const clueImageEl = document.getElementById('clueImage');
+      function pickWord(){
+        return WORDS[Math.floor(Math.random() * WORDS.length)];
+      }
+
+      function makeImageDataUri(label, emoji, color){
+        const svg = [
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-label="', label, '">',
+          '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">',
+          '<stop offset="0%" stop-color="', color, '"/><stop offset="100%" stop-color="#ffffff"/></linearGradient></defs>',
+          '<rect width="320" height="320" rx="32" fill="url(#g)"/>',
+          '<circle cx="160" cy="118" r="76" fill="#ffffff" fill-opacity="0.28"/>',
+          '<text x="160" y="190" text-anchor="middle" font-size="124">', emoji, '</text>',
+          '</svg>'
+        ].join('');
+        return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+      }
+
+      function makeChoices(answer){
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+        const picks = [answer];
+        while(picks.length < 4){
+          const letter = letters[Math.floor(Math.random() * letters.length)];
+          if(picks.indexOf(letter) === -1) picks.push(letter);
+        }
+        return picks.sort(function(){ return Math.random() - 0.5; });
+      }
+
+      function updateHud(){
+        scoreEl.textContent = String(state.score);
+        streakEl.textContent = String(state.streak);
+        roundEl.textContent = String(state.round);
+      }
+
+      function renderWord(){
+        wordEl.innerHTML = '';
+        for(let i = 0; i < state.currentWord.length; i++){
+          const slot = document.createElement('div');
+          slot.className = 'slot' + (i === state.missingIndex ? ' blank' : '');
+          slot.textContent = i === state.missingIndex ? '_' : state.currentWord[i];
+          wordEl.appendChild(slot);
+        }
+      }
+
+      function renderChoices(){
+        choicesEl.innerHTML = '';
+        makeChoices(state.answer).forEach(function(letter){
+          const button = document.createElement('button');
+          button.className = 'choice';
+          button.type = 'button';
+          button.textContent = letter;
+          button.setAttribute('aria-label', 'Choose ' + letter);
+          button.addEventListener('click', function(){
+            if(state.locked) return;
+            if(letter === state.answer){
+              state.locked = true;
+              button.classList.add('correct');
+              state.score += 10;
+              state.streak += 1;
+              messageEl.textContent = 'Great job!';
+              gameCore.playTone(880, 0.08);
+              updateHud();
+              if(state.streak % 5 === 0){
+                gameCore.celebrate('confetti');
+              }
+              setTimeout(nextRound, 700);
+              return;
+            }
+
+            button.classList.add('wrong');
+            button.disabled = true;
+            state.streak = 0;
+            messageEl.textContent = 'Try another letter.';
+            gameCore.playTone(240, 0.1);
+            updateHud();
+          });
+          choicesEl.appendChild(button);
+        });
+      }
+
+      function nextRound(){
+        state.round += 1;
+        state.locked = false;
+        const next = pickWord();
+        state.currentWord = next.word;
+        state.missingIndex = Math.floor(Math.random() * state.currentWord.length);
+        state.answer = state.currentWord[state.missingIndex];
+        messageEl.textContent = 'Find the missing letter.';
+        clueImageEl.src = makeImageDataUri(next.word, next.emoji, next.color);
+        clueImageEl.alt = next.word + ' clue';
+        updateHud();
+        renderWord();
+        renderChoices();
+      }
+
+      function restart(){
+        state.score = 0;
+        state.streak = 0;
+        state.round = 1;
+        state.locked = false;
+        const first = pickWord();
+        state.currentWord = first.word;
+        state.missingIndex = Math.floor(Math.random() * state.currentWord.length);
+        state.answer = state.currentWord[state.missingIndex];
+        messageEl.textContent = 'Find the missing letter.';
+        clueImageEl.src = makeImageDataUri(first.word, first.emoji, first.color);
+        clueImageEl.alt = first.word + ' clue';
+        updateHud();
+        renderWord();
+        renderChoices();
+      }
+
+      document.getElementById('restart').addEventListener('click', restart);
+
+      window.addEventListener('keydown', function(e){
+        if(state.locked) return;
+        const key = e.key.toUpperCase();
+        if(key.length !== 1) return;
+        const button = Array.from(choicesEl.querySelectorAll('.choice')).find(function(el){
+          return el.textContent === key && !el.disabled;
+        });
+        if(button) button.click();
+      });
+
+      restart();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Drag & Match</title>
+    <link rel="stylesheet" href="/styles/games.css">
+    <style>
+        /* minimal overrides for this game */
+        body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#FBFEFF;color:#123}
+        .container{display:flex;gap:8px;padding:8px;align-items:stretch;height:calc(100vh - 140px);flex-direction:column}
+        .columns{display:flex;gap:8px;flex:1}
+        @media(min-width:720px){ .container{flex-direction:row} }
+        .column{flex:1;background:transparent;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start}
+        .panel{background:#fff;border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(2,6,23,0.06);flex:1;overflow:auto}
+        .panel h2{margin:4px 0 12px;font-size:18px;text-align:center}
+        .left-list,.right-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:10px}
+        .draggable{background:#ffd; padding:10px;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;border:2px solid transparent;min-height:72px}
+        .draggable.selected{outline:3px solid #3B82F6;transform:scale(1.02)}
+        .draggable.locked{opacity:0.6;cursor:default}
+        .target{min-height:56px;border-radius:10px;border:2px dashed #e5e7eb;background:#fbfbff;display:flex;align-items:center;justify-content:center;padding:8px}
+        .target.matching{border-color:#3b82f6;background:#eef6ff}
+        .ghost{position:fixed;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);opacity:0.95}
+        .controls-row{display:flex;gap:8px;justify-content:center;padding:8px}
+        .small-btn{padding:8px 12px;border-radius:8px;border:none;background:#e2e8f0}
+        /* celebration small */
+        .dm-celebration{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:120}
+        .dm-celebration.show{display:flex}
+        .dm-celebration .card{background:rgba(255,255,255,0.98);padding:18px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.12);text-align:center}
+    </style>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body>
+  <header style="padding:12px 16px;text-align:center">
+    <h1 style="margin:0">Drag & Match</h1>
+    <p style="margin:6px 0;color:#444">Tap a symbol on the left, then tap the matching name on the right.</p>
+  </header>
+
+  <div class="container">
+    <div class="columns">
+      <div class="column">
+        <div class="panel">
+          <h2>Items</h2>
+          <div id="leftList" class="left-list" role="list"></div>
+        </div>
+      </div>
+      <div class="column">
+        <div class="panel">
+          <h2>Match Targets</h2>
+          <div id="rightList" class="right-list" role="list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls-row">
+    <button id="shuffleBtn" class="small-btn">Shuffle</button>
+    <button id="restartBtn" class="small-btn">Restart</button>
+    <a href="/index.html" class="small-btn">Home</a>
+  </div>
+
+  <div id="cele" class="dm-celebration"><div class="card"><h2>Well done! 🎊</h2><p>Balloons!</p></div></div>
+
+<script>
+  // Simple drag & drop matching supporting mouse and touch (pointer events)
+  (function(){
+        const pairs = [
+            {left: '🍎', right: 'Apple'},
+            {left: '🐶', right: 'Dog'},
+            {left: '🚗', right: 'Car'},
+            {left: '⚽', right: 'Soccer'},
+            {left: '🌟', right: 'Star'},
+            {left: '🍌', right: 'Banana'},
+            {left: '🎈', right: 'Balloon'},
+            {left: '🐱', right: 'Cat'},
+            {left: '🍇', right: 'Grapes'},
+            {left: '🦋', right: 'Butterfly'},
+            {left: '🐦', right: 'Bird'},
+            {left: '🏠', right: 'House'},
+            {left: '🌳', right: 'Tree'},
+            {left: '☀️', right: 'Sun'},
+            {left: '🌙', right: 'Moon'},
+            {left: '🐠', right: 'Fish'},
+            {left: '📚', right: 'Book'},
+            {left: '✏️', right: 'Pencil'},
+            {left: '❤️', right: 'Heart'},
+            {left: '🔑', right: 'Key'}
+        ];
+
+        let leftItems = [];
+        let rightItems = [];
+        let matchedCount = 0;
+
+        const leftList = document.getElementById('leftList');
+        const rightList = document.getElementById('rightList');
+        const shuffleBtn = document.getElementById('shuffleBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const cele = document.getElementById('cele');
+        let selectedLeft = null; // currently selected left item for matching
+
+        function shuffleArray(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} }
+
+        function buildBoard(){
+            matchedCount = 0;
+            leftList.innerHTML = '';
+            rightList.innerHTML = '';
+            leftItems = pairs.slice(); rightItems = pairs.slice();
+            shuffleArray(leftItems); shuffleArray(rightItems);
+
+            leftItems.forEach((p, idx)=>{
+                const el = document.createElement('div');
+                el.className = 'draggable';
+                el.tabIndex = 0;
+                el.setAttribute('role','button');
+                el.dataset.key = p.left + '::' + p.right; // unique
+                el.dataset.left = p.left;
+                el.innerHTML = '<div style="font-size:28px">'+p.left+'</div><div style="font-size:12px;color:#444">'+p.right+'</div>';
+                leftList.appendChild(el);
+                makeDraggable(el);
+            });
+
+            rightItems.forEach((p, idx)=>{
+                const t = document.createElement('div');
+                t.className = 'target';
+                t.tabIndex = 0;
+                t.setAttribute('role','button');
+                t.dataset.key = p.left + '::' + p.right;
+                t.dataset.match = p.left; // we match by left symbol
+                t.innerHTML = '<span style="font-size:16px;color:#333">'+p.right+'</span>';
+                 // clicking a target attempts a match with the currently selected left item
+                 t.addEventListener('click', function(){
+                     if (!selectedLeft) { tone(440,0.06); return; }
+                    // already matched target? ignore
+                    if (t.querySelector('.draggable')) return;
+                    if (t.dataset.match === selectedLeft.dataset.left){
+                        // success
+                        selectedLeft.classList.add('locked');
+                        selectedLeft.classList.remove('selected');
+                        selectedLeft.style.opacity = '0.6';
+                        t.classList.add('matching');
+                        t.innerHTML = '';
+                        const copy = selectedLeft.cloneNode(true); copy.classList.remove('ghost'); copy.style.pointerEvents='none'; copy.style.width='100%'; copy.style.height='100%'; copy.style.margin=0; copy.style.background='transparent'; copy.style.border='none';
+                        t.appendChild(copy);
+                        tone(660,0.12);
+                        matchedCount++;
+                        selectedLeft = null;
+                        checkComplete();
+                    } else {
+                        // mismatch
+                        tone(220,0.12);
+                        // small shake on selected
+                        if (selectedLeft) selectedLeft.animate([{transform:'translateX(0)'},{transform:'translateX(-8px)'},{transform:'translateX(8px)'},{transform:'translateX(0)'}],{duration:360});
+                        selectedLeft.classList.remove('selected');
+                        selectedLeft = null;
+                    }
+                });
+                rightList.appendChild(t);
+            });
+        }
+
+        // Simple audio feedback using short WebAudio tones
+        const ctx = (window.AudioContext || window.webkitAudioContext) ? new (window.AudioContext || window.webkitAudioContext)() : null;
+        function tone(freq, d = 0.08){ if(!ctx) return; const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.value = freq; g.gain.value = 0.08; o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + d); }
+
+        // Selection-based interaction: click a left item to select it, then click a right target to match
+        function makeDraggable(el){
+            // left items become selectable instead of draggable
+            el.addEventListener('click', function(){
+                if (el.classList.contains('locked')) return;
+                // toggle selection
+                if (selectedLeft && selectedLeft === el){
+                    selectedLeft.classList.remove('selected');
+                    selectedLeft = null;
+                    tone(440, 0.06);
+                    return;
+                }
+                if (selectedLeft) selectedLeft.classList.remove('selected');
+                selectedLeft = el;
+                el.classList.add('selected');
+                tone(880,0.05);
+            });
+            // keyboard support
+            el.addEventListener('keydown', (ev)=>{ if(ev.key==='Enter'){ el.click(); } });
+        }
+
+        function clearBoard(){ leftList.innerHTML=''; rightList.innerHTML=''; }
+
+        function checkComplete(){ if (matchedCount >= pairs.length){ // celebration
+            cele.classList.add('show'); setTimeout(()=>cele.classList.remove('show'),5000);
+            // small balloons via simple DOM
+            for(let i=0;i<8;i++){ const b=document.createElement('div'); b.style.position='fixed'; b.style.left=(10+Math.random()*80)+'%'; b.style.bottom='-20px'; b.style.width='42px'; b.style.height='56px'; b.style.background=['#ff5c8a','#ffd166','#8bd3ff'][i%3]; b.style.borderRadius='50%'; b.style.opacity=0.95; b.style.zIndex=200; b.style.transition='transform 4s linear, bottom 4s linear'; document.body.appendChild(b); setTimeout(()=>{ b.style.bottom='110%'; b.style.transform='translateY(-100vh)'; },50); setTimeout(()=>b.remove(),5000); }
+            // sound
+            // reuse existing AudioContext (ctx) to avoid creating multiple contexts which can be expensive
+            if (ctx){ const o = ctx.createOscillator(); const g = ctx.createGain(); o.frequency.value = 880; o.type = 'sine'; g.gain.value = 0.08; o.connect(g); g.connect(ctx.destination); o.start(); setTimeout(()=>o.stop(), 350); }
+        } }
+
+        shuffleBtn.addEventListener('click', ()=>{ buildBoard(); });
+        restartBtn.addEventListener('click', ()=>{ buildBoard(); });
+
+        // init
+        buildBoard();
+    })();
+</script>
+</body>
+</html>

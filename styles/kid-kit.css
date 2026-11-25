@@ -1,0 +1,65 @@
+/* kid-kit.css — shared look for Kiddoxy games (big touch targets, friendly colors) */
+:root {
+  --k-bg: #fffaf0;
+  --k-surface: #ffffff;
+  --k-ink: #1f2937;
+  --k-muted: #6b7280;
+  --k-accent: #6366f1;
+  --k-good: #22c55e;
+  --k-bad: #ef4444;
+  --k-shadow: 0 10px 28px rgba(15, 23, 42, .10);
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  background: var(--k-bg);
+  color: var(--k-ink);
+  -webkit-tap-highlight-color: transparent;
+}
+.wrap { min-height: 100vh; display: flex; flex-direction: column; }
+header.game-header {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  gap: 10px; padding: 12px 16px;
+}
+header.game-header h1 { margin: 0; font-size: clamp(20px, 4vw, 28px); }
+.hud { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pill {
+  background: var(--k-surface); box-shadow: var(--k-shadow); border-radius: 999px;
+  padding: 8px 14px; font-weight: 800; white-space: nowrap;
+}
+.btn, .kit-btn {
+  appearance: none; border: none; cursor: pointer; text-decoration: none; display: inline-flex;
+  align-items: center; justify-content: center; gap: 6px;
+  background: var(--k-accent); color: #fff; font-weight: 800; font-size: 16px;
+  padding: 12px 18px; border-radius: 14px; min-height: 48px;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .15);
+  transition: transform .08s ease;
+}
+.btn:active, .kit-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0, 0, 0, .15); }
+.btn.secondary, .kit-secondary { background: #e5e7eb; color: var(--k-ink); }
+.icon-btn { width: 48px; padding: 0; font-size: 22px; }
+main.game-main { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 12px 16px 24px; }
+.panel { background: var(--k-surface); border-radius: 18px; box-shadow: var(--k-shadow); padding: 16px; width: 100%; max-width: 760px; }
+.prompt { font-size: clamp(20px, 4.5vw, 30px); font-weight: 900; text-align: center; margin: 4px 0 12px; }
+.muted { color: var(--k-muted); }
+.seg { display: inline-flex; background: #eef2ff; border-radius: 14px; padding: 4px; gap: 4px; }
+.seg button { background: transparent; color: var(--k-ink); box-shadow: none; min-height: 40px; padding: 8px 14px; border-radius: 10px; font-weight: 800; border: none; cursor: pointer; font-size: 15px; }
+.seg button.active { background: var(--k-accent); color: #fff; }
+
+@keyframes kit-pop { 0% { transform: scale(1); } 40% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@keyframes kit-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+.pop { animation: kit-pop .35s ease; }
+.shake { animation: kit-shake .3s ease; }
+
+.kit-modal { position: fixed; inset: 0; background: rgba(15, 23, 42, .55); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 9000; }
+.kit-modal.open { display: flex; }
+.kit-dialog { background: #fff; border-radius: 20px; padding: 24px; max-width: 380px; width: 100%; text-align: center; box-shadow: var(--k-shadow); }
+.kit-dialog h2 { margin: 6px 0; font-size: 26px; }
+.kit-dialog p { color: var(--k-muted); font-size: 17px; }
+.kit-emoji { font-size: 56px; }
+.kit-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+.ad-banner { height: 60px; background: #fff; border-top: 1px solid #eee; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 12px; }
+
+@media (prefers-reduced-motion: reduce) { .pop, .shake { animation: none; } }

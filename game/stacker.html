@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8"/>
+	<meta name="viewport" content="width=device-width,initial-scale=1"/>
+	<title>Stacker</title>
+	<style>
+		:root{ --bg:#fff8f6; --surface:#ffffff; --accent:#f97316; --muted:#6b7280; --shadow:0 10px 30px rgba(0,0,0,.08); }
+		html,body{height:100%;margin:0;font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial}
+		body{background:var(--bg);color:#111}
+		.wrap{min-height:100%;display:flex;flex-direction:column}
+		header{padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+		header a{color:#2563eb;text-decoration:none;font-weight:700}
+		.hud{display:flex;gap:12px;align-items:center}
+		.pill{background:#fff;box-shadow:var(--shadow);border-radius:999px;padding:8px 12px;font-weight:800}
+		.btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+		.btn.secondary{background:#e5e7eb;color:#111}
+
+		main{flex:1;display:flex;align-items:center;justify-content:center;padding:12px}
+		.panel{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:14px}
+		.stage{position:relative;width:380px;max-width:90vw;height:560px;margin:0 auto;border-radius:12px;overflow:hidden;background:linear-gradient(#fff, #fff5ee);touch-action:manipulation}
+		.ground{position:absolute;left:0;right:0;bottom:0;height:28px;background:#fecaca}
+		.block{position:absolute;height:24px;border-radius:6px;background:#f59e0b;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+		.block.alt{background:#fb923c}
+		.overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.5)}
+		.overlay.open{display:flex}
+		.dialog{background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:16px;text-align:center;max-width:420px}
+		.ad-banner{height:60px;background:#fff;border-top:1px solid #eee;display:flex;align-items:center;justify-content:center}
+		.hint{color:var(--muted);text-align:center;margin-top:8px}
+	</style>
+	<link rel="icon" href="/kiddoxy.png" type="image/png">
+	<link rel="manifest" href="/manifest.json">
+	<script defer src="/game-shell.js"></script>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body>
+	<div class="wrap">
+		<header>
+			<a href="/index.html">← Home</a>
+			<div class="hud">
+				<div class="pill">Score: <span id="score">0</span></div>
+				<div class="pill">Level: <span id="level">1</span></div>
+				<button class="btn secondary" id="btnShuffle">Restart</button>
+			</div>
+		</header>
+
+		<main>
+			<section class="panel" style="width:100%">
+				<div class="stage" id="stage">
+					<div class="ground"></div>
+				</div>
+				<div class="hint">Tap anywhere in the stage to drop the moving block.</div>
+			</section>
+		</main>
+
+		<div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+	</div>
+
+	<div class="overlay" id="modal" role="dialog" aria-modal="true">
+		<div class="dialog">
+			<h2 id="modalTitle">Game Over</h2>
+			<p id="modalDesc" class="hint">Try again and stack higher!</p>
+			<div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+				<button class="btn" id="btnPlayAgain">Play Again</button>
+				<a class="btn secondary" href="/index.html">Home</a>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// --- Audio helpers ---
+		let _audioCtx = null;
+		function getAudioCtx(){
+			if(!_audioCtx || _audioCtx.state === 'closed'){
+				const AC = window.AudioContext || window.webkitAudioContext;
+				if(!AC) return null;
+				_audioCtx = new AC();
+			}
+			return _audioCtx;
+		}
+		function beep(freq=640, dur=0.08, type='sine', vol=0.25){
+			const ac = getAudioCtx(); if(!ac) return;
+			if(ac.state === 'suspended'){ try{ ac.resume(); }catch(_){} }
+			const osc = ac.createOscillator(); const g = ac.createGain();
+			osc.type = type; osc.frequency.value = freq;
+			const t = ac.currentTime; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+			osc.connect(g).connect(ac.destination); osc.start(t); osc.stop(t + dur);
+		}
+
+		// --- Game state ---
+		const STAGE = { w: 380, h: 560, blockH: 24 };
+		const SPEEDS = { base: 2.2, step: 0.20, max: 6 };
+		let state = { score:0, level:1, stack:[], moving:null, running:false, dropping:false };
+		let rafId = null;
+		let tapLock = false; // blocks secondary events from a single tap
+		let lastTapAt = 0; // debounce timestamp
+		let stageEl = null;
+
+		function setHUD(){
+			document.getElementById('score').textContent = state.score;
+			document.getElementById('level').textContent = state.level;
+		}
+
+		function createBlock(x, y, w, alt=false){
+			const el = document.createElement('div');
+			el.className = 'block' + (alt ? ' alt' : '');
+			el.style.width = w + 'px';
+			el.style.left = x + 'px';
+			el.style.top = y + 'px';
+			return el;
+		}
+
+		function init(){
+			stageEl = document.getElementById('stage');
+			STAGE.w = stageEl.clientWidth || STAGE.w;
+			STAGE.h = stageEl.clientHeight || STAGE.h;
+			stageEl.innerHTML = '<div class="ground"></div>';
+			state = { score:0, level:1, stack:[], moving:null, running:true, dropping:false };
+			tapLock = false;
+			setHUD();
+
+			// base block centered on ground
+			const baseW = Math.floor(STAGE.w * 0.48);
+			const baseX = Math.floor((STAGE.w - baseW)/2);
+			const baseY = STAGE.h - STAGE.blockH - 28; // above ground
+			const base = { x: baseX, y: baseY, w: baseW };
+			state.stack.push(base);
+			stageEl.appendChild(createBlock(base.x, base.y, base.w));
+
+			spawnMoving();
+			loop();
+			// enable first tap for the initial moving block
+			bindTap();
+		}
+
+		function spawnMoving(){
+			const stage = document.getElementById('stage');
+			const prev = state.stack[state.stack.length-1];
+			const w = prev.w;
+			const dirRight = (state.stack.length % 2 === 0);
+			const startX = dirRight ? -w : STAGE.w; // start off-screen
+			const y = Math.max(prev.y - STAGE.blockH*2, STAGE.blockH*2);
+			const speed = Math.min(SPEEDS.base + SPEEDS.step * (state.stack.length-1), SPEEDS.max);
+			const el = createBlock(startX, y, w, true);
+			stage.appendChild(el);
+			state.moving = { x:startX, y, w, dir: dirRight ? 1 : -1, speed, el };
+		}
+
+		function loop(){
+			cancelAnimationFrame(rafId);
+			const tick = () => {
+				if(state.running && state.moving && !state.dropping){
+					state.moving.x += state.moving.speed * state.moving.dir;
+					// bounce from edges
+					if(state.moving.x <= 0){ state.moving.x = 0; state.moving.dir = 1; }
+					if(state.moving.x + state.moving.w >= STAGE.w){ state.moving.x = STAGE.w - state.moving.w; state.moving.dir = -1; }
+					state.moving.el.style.left = state.moving.x + 'px';
+				}
+				if(state.running && state.dropping){
+					// fall down until sits atop stack
+					const targetY = state.stack[state.stack.length-1].y - STAGE.blockH;
+					state.moving.y += 8;
+					if(state.moving.y >= targetY){ state.moving.y = targetY; finishDrop(); }
+					state.moving.el.style.top = state.moving.y + 'px';
+				}
+				rafId = requestAnimationFrame(tick);
+			};
+			rafId = requestAnimationFrame(tick);
+		}
+
+		function handleTap(e){
+			// prevent synthetic click from generating extra events
+			if(e && e.preventDefault) e.preventDefault();
+			if(e && e.stopPropagation) e.stopPropagation();
+			const now = performance.now();
+			if (now - lastTapAt < 180) return; // ignore rapid secondary events
+			lastTapAt = now;
+			if (tapLock) return;
+			if(!state.running || !state.moving) return;
+			if(state.dropping) return; // ignore spurious taps
+			tapLock = true;
+			state.dropping = true;
+			beep(720, 0.08, 'triangle', 0.22); // drop sound
+		}
+
+		function finishDrop(){
+			const prev = state.stack[state.stack.length-1];
+			const cur = state.moving;
+			const left = cur.x;
+			const right = cur.x + cur.w;
+			const pLeft = prev.x;
+			const pRight = prev.x + prev.w;
+			const overlapLeft = Math.max(left, pLeft);
+			const overlapRight = Math.min(right, pRight);
+			const overlap = overlapRight - overlapLeft;
+
+			if(overlap <= 0 || overlap < 8){
+				gameOver();
+				return;
+			}
+
+			// trim current block to the overlap
+			cur.w = Math.floor(overlap);
+			cur.x = Math.floor(overlapLeft);
+			cur.el.style.width = cur.w + 'px';
+			cur.el.style.left = cur.x + 'px';
+			cur.el.classList.remove('alt');
+			beep(540, 0.09, 'sine', 0.26); // success sound
+
+			// add to stack
+			state.stack.push({ x:cur.x, y:cur.y, w:cur.w });
+			state.score += 1;
+			state.level = 1 + Math.floor(state.stack.length / 5);
+			setHUD();
+
+			// spawn next
+			state.moving = null; state.dropping = false; tapLock = false;
+			spawnMoving();
+			// re-enable tap input for the next block
+			// persistent listeners; guards in handleTap prevent duplicates
+			stageEl.addEventListener('pointerdown', handleTap, { passive: false });
+			stageEl.addEventListener('pointerup', (e)=>{ if(e && e.preventDefault) e.preventDefault(); if(e && e.stopPropagation) e.stopPropagation(); }, { passive:false });
+		}
+
+		function gameOver(){
+			beep(240, 0.10, 'sawtooth', 0.22);
+			state.running = false;
+			state.dropping = false;
+			document.getElementById('modalTitle').textContent = 'Game Over';
+			document.getElementById('modalDesc').textContent = 'Score ' + state.score + '. Tap Play Again to try for a higher stack!';
+			document.getElementById('modal').classList.add('open');
+		}
+
+		function restart(){
+			document.getElementById('modal').classList.remove('open');
+			tapLock = false;
+			init();
+		}
+
+		function bindTap(){
+			if(!stageEl) return;
+		}
+
+		// wire up
+		window.addEventListener('DOMContentLoaded', () => {
+			init();
+			stageEl = document.getElementById('stage');
+			// persistent listeners; guards in handleTap prevent duplicates
+			stageEl.addEventListener('pointerdown', handleTap, { passive: false });
+			stageEl.addEventListener('pointerup', (e)=>{ if(e && e.preventDefault) e.preventDefault(); if(e && e.stopPropagation) e.stopPropagation(); }, { passive:false });
+			document.getElementById('btnPlayAgain').addEventListener('click', restart);
+			document.getElementById('btnShuffle').addEventListener('click', restart);
+		});
+	</script>
+</body>
+</html>
+

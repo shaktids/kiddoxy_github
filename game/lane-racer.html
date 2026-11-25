@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lane Racer</title>
+  <link rel="icon" href="/kiddoxy.png" type="image/png">
+  <link rel="stylesheet" href="/styles/kid-kit.css">
+  <style>
+    .stage { position: relative; width: 100%; max-width: 460px; height: min(72vh, 680px); border-radius: 20px; overflow: hidden; box-shadow: var(--k-shadow); background: #4ade80; touch-action: none; }
+    canvas { display: block; width: 100%; height: 100%; max-width: none !important; touch-action: none; }
+    .overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; color: #fff; text-align: center; padding: 16px; background: rgba(15,23,42,.55); }
+    .overlay h2 { margin: 0; font-size: 30px; }
+    .overlay p { margin: 0; max-width: 320px; font-size: 17px; }
+    .pads { display: flex; gap: 14px; width: 100%; max-width: 460px; }
+    .pads .btn { flex: 1; font-size: 30px; min-height: 64px; }
+  </style>
+  <script defer src="/scripts/game-brand.js"></script>
+  <script defer src="/game-shell.js"></script>
+  <script src="/scripts/kid-kit.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="game-header">
+    <h1>🏎️ Lane Racer</h1>
+    <div class="hud">
+      <span class="pill">🏁 <span id="dist">0</span> m</span>
+      <span class="pill">🪙 <span id="coins">0</span></span>
+      <span class="pill">❤️ <span id="lives">3</span></span>
+      <button class="btn secondary icon-btn" id="muteBtn" aria-label="Sound">🔊</button>
+    </div>
+  </header>
+  <main class="game-main">
+    <div class="stage" id="stage">
+      <canvas id="c" aria-label="Race track"></canvas>
+      <div class="overlay" id="overlay">
+        <h2>🏎️ Ready, set, go!</h2>
+        <p>Tap the left or right side (or swipe, or use ← →) to change lanes. Dodge the cars, grab coins 🪙 and fuel ⛽!</p>
+        <div class="seg" id="speedSeg" role="group" aria-label="Speed">
+          <button data-speed="0.8">🐢 Slow</button><button data-speed="1" class="active">🚗 Normal</button><button data-speed="1.3">🚀 Fast</button>
+        </div>
+        <button class="btn" id="go">▶ Race!</button>
+      </div>
+    </div>
+    <div class="pads"><button class="btn" id="leftBtn" aria-label="Move left">⬅️</button><button class="btn" id="rightBtn" aria-label="Move right">➡️</button></div>
+  </main>
+  <div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+</div>
+<script>
+(function () {
+  const LANES = 3, CAR_COLORS = ['#3b82f6', '#a855f7', '#f97316', '#eab308', '#14b8a6', '#ec4899'];
+  const c = document.getElementById('c'), ctx = c.getContext('2d');
+  const distEl = document.getElementById('dist'), coinsEl = document.getElementById('coins'), livesEl = document.getElementById('lives');
+  const overlay = document.getElementById('overlay');
+  let W = 0, H = 0, roadX = 0, roadW = 0, laneW = 0;
+  let player, things, speed, dist, coins, lives, running = false, last = 0, spawnT = 0, scroll = 0, inv = 0, mult = 1, shake = 0;
+
+  function resize() {
+    const r = c.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
+    W = r.width; H = r.height; c.width = W * dpr; c.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    roadW = Math.min(W - 40, 360); roadX = (W - roadW) / 2; laneW = roadW / LANES;
+    if (!running) draw();
+  }
+  const laneX = l => roadX + laneW * l + laneW / 2;
+
+  function reset() {
+    player = { lane: 1, x: 0, y: 0 }; player.x = laneX(1);
+    things = []; speed = 260 * mult; dist = 0; coins = 0; lives = 3; spawnT = 0.6; inv = 0;
+    distEl.textContent = 0; coinsEl.textContent = 0; livesEl.textContent = 3;
+  }
+  function move(d) {
+    if (!running) return;
+    const n = Math.max(0, Math.min(LANES - 1, player.lane + d));
+    if (n !== player.lane) { player.lane = n; Kit.beep(500 + n * 100, 0.05, 'triangle', 0.1); }
+  }
+
+  function spawn() {
+    // keep at least one lane free of cars in every row
+    const free = Kit.rand(0, LANES - 1);
+    const row = [];
+    for (let l = 0; l < LANES; l++) {
+      if (l === free) { if (Math.random() < 0.55) row.push({ type: Math.random() < 0.15 ? 'fuel' : 'coin', lane: l }); continue; }
+      if (Math.random() < 0.45) row.push({ type: 'car', lane: l, color: Kit.pick(CAR_COLORS), v: 0.35 + Math.random() * 0.25 });
+    }
+    row.forEach(t => { t.y = -80; things.push(t); });
+  }
+
+  function update(dt) {
+    speed = Math.min(620 * mult, speed + dt * 9 * mult);
+    dist += speed * dt / 20; distEl.textContent = Math.floor(dist);
+    scroll = (scroll + speed * dt) % 80;
+    player.x += (laneX(player.lane) - player.x) * Math.min(1, dt * 16);
+    player.y = H - 90;
+    spawnT -= dt; if (spawnT <= 0) { spawn(); spawnT = Math.max(0.45, 1.05 - speed / 1400) / mult; }
+    inv = Math.max(0, inv - dt); shake = Math.max(0, shake - dt);
+    things = things.filter(t => {
+      t.y += speed * dt * (t.type === 'car' ? t.v : 1);
+      const hit = Math.abs(laneX(t.lane) - player.x) < laneW * 0.55 && Math.abs(t.y - player.y) < 60;
+      if (hit) {
+        if (t.type === 'coin') { coins++; coinsEl.textContent = coins; Kit.beep(1046, 0.08, 'square', 0.08); return false; }
+        if (t.type === 'fuel') { lives = Math.min(5, lives + 1); livesEl.textContent = lives; Kit.sfx.good(); return false; }
+        if (inv <= 0) {
+          lives--; livesEl.textContent = lives; inv = 1.6; shake = 0.4; speed *= 0.6; Kit.sfx.bad();
+          if (lives <= 0) { end(); return false; }
+        }
+      }
+      return t.y < H + 100;
+    });
+  }
+
+  function car(x, y, color, isPlayer) {
+    const w = Math.min(54, laneW * 0.62), h = w * 1.7;
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = 'rgba(0,0,0,.18)'; rr(-w / 2 + 4, -h / 2 + 6, w, h, 12); ctx.fill();
+    ctx.fillStyle = '#111827'; [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => rr(sx * w / 2 - (sx > 0 ? 6 : 0) - 2, sy * h * 0.28 - 9, 8, 18, 3) || ctx.fill());
+    ctx.fillStyle = color; rr(-w / 2, -h / 2, w, h, 12); ctx.fill();
+    ctx.fillStyle = 'rgba(191,219,254,.95)'; rr(-w * 0.34, isPlayer ? -h * 0.28 : h * 0.06, w * 0.68, h * 0.2, 6); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.35)'; rr(-w * 0.1, -h / 2 + 4, w * 0.2, h - 8, 4); ctx.fill();
+    if (isPlayer) { ctx.fillStyle = '#fff'; ctx.font = `bold ${w * 0.32}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('1', 0, h * 0.18); }
+    ctx.restore();
+  }
+  function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+  function draw() {
+    ctx.save();
+    if (shake > 0) ctx.translate((Math.random() - .5) * 10, 0);
+    ctx.fillStyle = '#4ade80'; ctx.fillRect(-10, 0, W + 20, H);
+    // roadside trees
+    ctx.font = '26px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (let y = -80 + scroll; y < H + 80; y += 80) { ctx.fillText('🌳', roadX / 2, y); ctx.fillText(y % 160 < 80 ? '🌼' : '🌳', W - roadX / 2, y + 40); }
+    ctx.fillStyle = '#374151'; ctx.fillRect(roadX, 0, roadW, H);
+    ctx.fillStyle = '#ef4444'; for (let y = -40 + (scroll % 40); y < H; y += 40) { ctx.fillRect(roadX - 8, y, 8, 20); ctx.fillRect(roadX + roadW, y, 8, 20); }
+    ctx.fillStyle = '#fff'; for (let y = -40 + (scroll % 40); y < H; y += 40) { ctx.fillRect(roadX - 8, y + 20, 8, 20); ctx.fillRect(roadX + roadW, y + 20, 8, 20); }
+    ctx.fillStyle = 'rgba(255,255,255,.75)';
+    for (let l = 1; l < LANES; l++) for (let y = -80 + scroll; y < H; y += 80) ctx.fillRect(roadX + laneW * l - 3, y, 6, 40);
+    if (things) things.forEach(t => {
+      if (t.type === 'car') car(laneX(t.lane), t.y, t.color, false);
+      else { ctx.font = '34px serif'; ctx.fillText(t.type === 'coin' ? '🪙' : '⛽', laneX(t.lane), t.y); }
+    });
+    if (player && (inv <= 0 || Math.floor(inv * 10) % 2 === 0)) car(player.x || laneX(1), player.y || H - 90, '#ef4444', true);
+    ctx.restore();
+  }
+
+  function loop(t) {
+    if (!running) return;
+    const dt = Math.min(0.05, (t - last) / 1000 || 0); last = t;
+    update(dt); draw(); if (running) requestAnimationFrame(loop);
+  }
+  function start() { reset(); overlay.hidden = true; running = true; Kit.sfx.tap(); last = performance.now(); requestAnimationFrame(loop); }
+  function end() {
+    running = false;
+    const score = Math.floor(dist) + coins * 10;
+    const r = Kit.best('lane-racer', score);
+    Kit.sfx.win(); if (r.isNew) Kit.celebrate();
+    Kit.showResult({ emoji: '🏁', title: 'Race over!', text: `You drove ${Math.floor(dist)} m and grabbed ${coins} coins. Score ${score}.` + (r.isNew ? ' New best!' : ` Best: ${r.best}.`), onAgain: start });
+  }
+
+  // Controls
+  document.getElementById('leftBtn').onclick = () => move(-1);
+  document.getElementById('rightBtn').onclick = () => move(1);
+  window.addEventListener('keydown', e => { if (e.key === 'ArrowLeft') { move(-1); e.preventDefault(); } if (e.key === 'ArrowRight') { move(1); e.preventDefault(); } });
+  let sx = null;
+  c.addEventListener('pointerdown', e => { sx = e.clientX; });
+  c.addEventListener('pointerup', e => {
+    if (sx === null) return;
+    const dx = e.clientX - sx, rect = c.getBoundingClientRect();
+    if (Math.abs(dx) > 30) move(dx > 0 ? 1 : -1); else move(e.clientX - rect.left < rect.width / 2 ? -1 : 1);
+    sx = null;
+  });
+  document.getElementById('speedSeg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    document.querySelectorAll('#speedSeg button').forEach(x => x.classList.toggle('active', x === b));
+    mult = Number(b.dataset.speed);
+  });
+  document.getElementById('go').onclick = start;
+  document.addEventListener('visibilitychange', () => { if (document.hidden && running) { running = false; overlay.hidden = false; document.getElementById('go').textContent = '▶ Resume'; document.getElementById('go').onclick = () => { overlay.hidden = true; running = true; last = performance.now(); requestAnimationFrame(loop); document.getElementById('go').onclick = start; document.getElementById('go').textContent = '▶ Race!'; }; } });
+  window.addEventListener('resize', resize);
+  reset(); resize();
+})();
+</script>
+</body>
+</html>

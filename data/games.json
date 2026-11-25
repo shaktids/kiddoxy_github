@@ -1,0 +1,3025 @@
+[
+  {
+    "id": "memory",
+    "title": "Memory Match",
+    "shortDesc": "Flip cards to find matching pairs — 4 levels and 4 themes.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/memory.html",
+    "adPolicy": {
+      "banner": true,
+      "interstitialOnCompletion": true
+    },
+    "assets": [
+      "assets/games/memory/memory-match.png"
+    ],
+    "reward": "confetti",
+    "priority": 1
+  },
+  {
+    "id": "odd-one-out",
+    "title": "Odd One Out",
+    "shortDesc": "Tap the one item that looks different in the grid.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/odd-one-out.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/odd-one-out/odd-one-out.svg"
+    ],
+    "reward": "sparkles",
+    "priority": 2
+  },
+  {
+    "id": "time-teller",
+    "title": "Time Teller",
+    "shortDesc": "Set the clock to match the given time.",
+    "interaction": "drag",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/time-teller.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/time-teller/time.svg"
+    ],
+    "reward": "stars",
+    "priority": 2
+  },
+  {
+    "id": "word-builder",
+    "title": "Word Builder",
+    "shortDesc": "Form the target word from given letters.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/word-builder.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/word-builder/word-builder.jpg"
+    ],
+    "reward": "stars",
+    "priority": 2
+  },
+  {
+    "id": "missing-letter",
+    "title": "Missing Letter",
+    "shortDesc": "Pick the missing letter to complete the word.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/missing-letter.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [],
+    "reward": "stars",
+    "priority": 2
+  },
+  {
+    "id": "money-count",
+    "title": "Money Counter",
+    "shortDesc": "Count coins/notes to match the price.",
+    "interaction": "drag",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/money-count.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/money-count/moneycounter.jpg"
+    ],
+    "reward": "confetti",
+    "priority": 2
+  },
+  {
+    "id": "shadow-match",
+    "title": "Shadow Match",
+    "shortDesc": "Drag objects onto their matching shadows.",
+    "interaction": "drag",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/shadow-match.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/shadow-match/shadow-matching.png"
+    ],
+    "reward": "sparkles",
+    "priority": 2
+  },
+  {
+    "id": "bubble-pop",
+    "title": "Bubble Pop",
+    "shortDesc": "Tap floating bubbles to pop them and score points.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/bubble-pop.html",
+    "adPolicy": {
+      "banner": true,
+      "interstitialOnCompletion": true
+    },
+    "assets": [
+      "assets/games/bubble-pop/bobble-pop.png"
+    ],
+    "reward": "balloon-spray",
+    "priority": 1
+  },
+  {
+    "id": "drag-match",
+    "title": "Drag & Match",
+    "shortDesc": "Drag shapes/objects onto matching outlines (or tap-select to match).",
+    "interaction": "drag",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/dragMatch.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/drag-match/drag.png"
+    ],
+    "reward": "stars",
+    "priority": 1
+  },
+  {
+    "id": "whack-fruit",
+    "title": "Whack-a-Fruit",
+    "shortDesc": "Tap popping fruits before they disappear.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/whack-fruit.html",
+    "adPolicy": {
+      "banner": true,
+      "interstitialEveryN": 3
+    },
+    "assets": [
+      "assets/games/whack-fruit/fruit.png"
+    ],
+    "reward": "fruit-explosion",
+    "priority": 2
+  },
+  {
+    "id": "tile-slider",
+    "title": "Tile Slider",
+    "shortDesc": "Slide number or picture tiles back into order (2×2 to 4×4).",
+    "interaction": "swipe",
+    "orientation": "portrait",
+    "complexity": "medium",
+    "route": "game/tile-slider.html",
+    "adPolicy": {
+      "banner": true,
+      "interstitialOnCompletion": true
+    },
+    "assets": [
+      "assets/games/tile-slider/tile-slider.png"
+    ],
+    "reward": "sparkles",
+    "priority": 2
+  },
+  {
+    "id": "jigsaw",
+    "title": "Mini Jigsaw",
+    "shortDesc": "Drag jigsaw pieces to form a picture.",
+    "interaction": "drag",
+    "orientation": "landscape",
+    "complexity": "medium",
+    "route": "game/jigsaw.html",
+    "adPolicy": {
+      "banner": true,
+      "interstitialOnCompletion": true
+    },
+    "assets": [
+      "assets/games/jigsaw/jigsaw.png"
+    ],
+    "reward": "confetti",
+    "priority": 3
+  },
+  {
+    "id": "simon",
+    "title": "Simon Says",
+    "shortDesc": "Repeat increasingly long color/tone sequences.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/simon.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/simon/simon.png"
+    ],
+    "reward": "star-trail",
+    "priority": 2
+  },
+  {
+    "id": "coloring",
+    "title": "Coloring Page",
+    "shortDesc": "Tap/drag to paint regions with fun colors and stamps.",
+    "interaction": "tap-drag",
+    "orientation": "portrait",
+    "complexity": "medium",
+    "route": "game/coloring.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/coloring/color-game-jili.webp"
+    ],
+    "reward": "sticker-unlock",
+    "priority": 2
+  },
+  {
+    "id": "connect-dots",
+    "title": "Connect-the-Dots",
+    "shortDesc": "Tap or drag along numbered dots to reveal a picture.",
+    "interaction": "tap-drag",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/connect-dots.html",
+    "adPolicy": {
+      "banner": true,
+      "interstitialOnCompletion": true
+    },
+    "assets": [
+      "assets/games/connect-dots/dots.png"
+    ],
+    "reward": "confetti",
+    "priority": 2
+  },
+  {
+    "id": "maze",
+    "title": "Maze Escape",
+    "shortDesc": "Drag a character through a maze to the exit.",
+    "interaction": "drag",
+    "orientation": "landscape",
+    "complexity": "medium",
+    "route": "game/maze.html",
+    "adPolicy": {
+      "banner": true,
+      "interstitialOnCompletion": true
+    },
+    "assets": [
+      "assets/games/maze/maze.png"
+    ],
+    "reward": "fireworks",
+    "priority": 3
+  },
+  {
+    "id": "shape-sorter",
+    "title": "Shape Sorter",
+    "shortDesc": "Drag shapes into matching holes before time runs out.",
+    "interaction": "drag",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/shape-sorter.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/shape-sorter/shape-sorter.png"
+    ],
+    "reward": "bounce",
+    "priority": 2
+  },
+  {
+    "id": "stacker",
+    "title": "Stacker",
+    "shortDesc": "Tap to drop moving blocks and stack as high as possible.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/stacker.html",
+    "adPolicy": {
+      "banner": true,
+      "interstitialOnGameOver": true
+    },
+    "assets": [
+      "assets/games/stacker/stacker.png"
+    ],
+    "reward": "medal",
+    "priority": 2
+  },
+  {
+    "id": "spot-diff",
+    "title": "Spot the Difference",
+    "shortDesc": "Tap differences between two side-by-side images.",
+    "interaction": "tap",
+    "orientation": "landscape",
+    "complexity": "medium",
+    "route": "game/spot-diff.html",
+    "adPolicy": {
+      "banner": true,
+      "interstitialOnCompletion": true
+    },
+    "assets": [
+      "assets/games/spot-diff/spot-dif.png"
+    ],
+    "reward": "sparkles",
+    "priority": 2
+  },
+  {
+    "id": "count-match",
+    "title": "Counting Match",
+    "shortDesc": "Match numbers to groups of items (count and match).",
+    "interaction": "drag",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/count-match.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/count-match/count-match.png"
+    ],
+    "reward": "stars",
+    "priority": 2
+  },
+  {
+    "id": "balloon-race",
+    "title": "Balloon Pop Race",
+    "shortDesc": "Pop balloons in the right color order to win.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/balloon-race.html",
+    "adPolicy": {
+      "banner": true,
+      "interstitialOnCompletion": true
+    },
+    "assets": [
+      "assets/games/balloon-race/balloon-race.png"
+    ],
+    "reward": "confetti",
+    "priority": 2,
+    "category": "Racing"
+  },
+  {
+    "id": "tile-flip",
+    "title": "Tile Flip Memory",
+    "shortDesc": "Watch a tile sequence then flip them in order.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/tile-flip.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/tile-flip/flip.png"
+    ],
+    "reward": "ribbon",
+    "priority": 2
+  },
+  {
+    "id": "finger-paint",
+    "title": "Finger Painting",
+    "shortDesc": "Paint with brushes, spray, rainbow colors and stamps. Save your art!",
+    "interaction": "drag",
+    "orientation": "portrait",
+    "complexity": "medium",
+    "route": "game/finger-paint.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/finger-paint/finger-paint.png"
+    ],
+    "reward": "frames",
+    "priority": 3
+  },
+  {
+    "id": "musical-tiles",
+    "title": "Musical Tiles",
+    "shortDesc": "Tap to play notes and recreate simple tunes.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "medium",
+    "route": "game/musical-tiles.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/musical-tiles/music-tiles.png"
+    ],
+    "reward": "badge",
+    "priority": 3
+  },
+  {
+    "id": "find-target",
+    "title": "Find the Target",
+    "shortDesc": "Tap the hidden target that appears briefly in a busy scene.",
+    "interaction": "tap",
+    "orientation": "landscape",
+    "complexity": "simple",
+    "route": "game/find-target.html",
+    "adPolicy": {
+      "banner": true,
+      "interstitialOnSessionEnd": true
+    },
+    "assets": [
+      "assets/games/find-target/target.png"
+    ],
+    "reward": "star-shower",
+    "priority": 3
+  },
+  {
+    "id": "number-match",
+    "title": "Number Matching Game",
+    "shortDesc": "Drag numbers to matching sums or groups.",
+    "interaction": "drag",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/number-match.html",
+    "adPolicy": {
+      "banner": true,
+      "interstitialOnCompletion": true
+    },
+    "assets": [
+      "assets/games/number-match/number matching game.png"
+    ],
+    "reward": "confetti",
+    "priority": 1
+  },
+  {
+    "id": "sorting-hero",
+    "title": "Sorting Hero",
+    "shortDesc": "Sort the item at the top by tapping the correct category below.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/sorting-hero.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/sorting-hero/sorting-hero.avif"
+    ],
+    "reward": "stars",
+    "priority": 2
+  },
+  {
+    "id": "hungry-math-shark",
+    "title": "Hungry Math Shark",
+    "shortDesc": "Move the shark to eat the correct answer bubble!",
+    "interaction": "arrow-keys-touch",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/hungry-math-shark.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/hungry-math-shark/hungry-shark.jpg"
+    ],
+    "reward": "stars",
+    "priority": 2
+  },
+  {
+    "id": "alphabet-catch",
+    "title": "Alphabet Catch Game",
+    "shortDesc": "Pop the correct letter balloon to score points!",
+    "interaction": "tap",
+    "orientation": "landscape",
+    "complexity": "simple",
+    "route": "game/alphabet-catch.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/alphabet-catch/alphabet-catch.webp"
+    ],
+    "reward": "balloon-pop",
+    "priority": 2
+  },
+  {
+    "id": "alphabet-animal-match",
+    "title": "Alphabet Animal Match",
+    "shortDesc": "See a letter, then match animal names to the right animal pictures.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/alphabet-animal-match.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/alphabet-animal-match/alphabet-animal-match.svg"
+    ],
+    "reward": "stars",
+    "priority": 2
+  },
+  {
+    "id": "color-shape-match",
+    "title": "Color & Shape Match",
+    "shortDesc": "Select the correct color and shape!",
+    "interaction": "tap",
+    "orientation": "landscape",
+    "complexity": "simple",
+    "route": "game/color-shape-match.html",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/color-shape-match/color-shape-match.jpg"
+    ],
+    "reward": "sparkles",
+    "priority": 2
+  },
+  {
+    "id": "pattern-train",
+    "title": "Pattern Train",
+    "shortDesc": "Finish the pattern to send the train on its way.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/pattern-train.html",
+    "category": "Logic & Puzzles",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/pattern-train/icon.svg"
+    ],
+    "reward": "confetti",
+    "priority": 1
+  },
+  {
+    "id": "more-or-less",
+    "title": "More or Less",
+    "shortDesc": "Which side has more? Learn bigger, smaller and < = >.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/more-or-less.html",
+    "category": "Math & Numbers",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/more-or-less/icon.svg"
+    ],
+    "reward": "confetti",
+    "priority": 1
+  },
+  {
+    "id": "listen-tap",
+    "title": "Listen & Tap",
+    "shortDesc": "Hear a letter, number, word or color and tap it.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/listen-tap.html",
+    "category": "Words & Letters",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/listen-tap/icon.svg"
+    ],
+    "reward": "confetti",
+    "priority": 1
+  },
+  {
+    "id": "star-catcher",
+    "title": "Star Catcher",
+    "shortDesc": "Move the basket to catch falling stars and dodge clouds.",
+    "interaction": "drag",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/star-catcher.html",
+    "category": "Arcade & Action",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/star-catcher/icon.svg"
+    ],
+    "reward": "confetti",
+    "priority": 1
+  },
+  {
+    "id": "tic-tac-toe",
+    "title": "Tic-Tac-Toe",
+    "shortDesc": "Play against a friendly bot or a friend.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/tic-tac-toe.html",
+    "category": "Logic & Puzzles",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/tic-tac-toe/icon.svg"
+    ],
+    "reward": "confetti",
+    "priority": 1
+  },
+  {
+    "id": "lane-racer",
+    "title": "Lane Racer",
+    "shortDesc": "Switch lanes to dodge traffic and grab coins on the race track.",
+    "interaction": "swipe",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/lane-racer.html",
+    "category": "Racing",
+    "isNew": true,
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/lane-racer/icon.svg"
+    ],
+    "reward": "confetti",
+    "priority": 1
+  },
+  {
+    "id": "math-race",
+    "title": "Math Race",
+    "shortDesc": "Solve sums to zoom your car past the turtle, bunny and cheetah.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/math-race.html",
+    "category": "Racing",
+    "isNew": true,
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/math-race/icon.svg"
+    ],
+    "reward": "confetti",
+    "priority": 1
+  },
+  {
+    "id": "letter-race",
+    "title": "Letter Race",
+    "shortDesc": "Tap the right letter to race to the finish line.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/letter-race.html",
+    "category": "Racing",
+    "isNew": true,
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/letter-race/icon.svg"
+    ],
+    "reward": "confetti",
+    "priority": 1
+  },
+  {
+    "id": "picture-sudoku",
+    "title": "Picture Sudoku",
+    "shortDesc": "Fill the grid so every row, column and box has each picture once.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/picture-sudoku.html",
+    "category": "Logic & Puzzles",
+    "isNew": true,
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/picture-sudoku/icon.svg"
+    ],
+    "reward": "confetti",
+    "priority": 1
+  },
+  {
+    "id": "drum-pad",
+    "title": "Drum Pad",
+    "shortDesc": "Tap drums and funny sounds, then build your own beat.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/drum-pad.html",
+    "category": "Creative Play",
+    "isNew": true,
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/drum-pad/icon.svg"
+    ],
+    "reward": "confetti",
+    "priority": 1
+  },
+  {
+    "id": "name-the-animal",
+    "title": "Name the Animal",
+    "shortDesc": "Look at the animal and pick its name.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/name-the-animal.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/name-the-animal/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "find-the-animal",
+    "title": "Find the Animal",
+    "shortDesc": "Hear an animal name and tap the right picture.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/find-the-animal.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/find-the-animal/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "name-the-fruit",
+    "title": "Name the Fruit",
+    "shortDesc": "Pick the name of each yummy fruit.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/name-the-fruit.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/name-the-fruit/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "name-the-veggie",
+    "title": "Name the Veggie",
+    "shortDesc": "Learn the names of vegetables.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/name-the-veggie.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/name-the-veggie/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "name-the-vehicle",
+    "title": "Name the Vehicle",
+    "shortDesc": "Cars, trains, rockets — what is it called?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/name-the-vehicle.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/name-the-vehicle/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "color-names",
+    "title": "Color Names",
+    "shortDesc": "Pick the name of the color you see.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/color-names.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/color-names/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "find-the-color",
+    "title": "Find the Color",
+    "shortDesc": "Hear a color and tap the matching circle.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/find-the-color.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/find-the-color/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "shape-names",
+    "title": "Shape Names",
+    "shortDesc": "Circle, triangle, star — name the shape.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/shape-names.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/shape-names/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "animal-sounds",
+    "title": "Animal Sounds",
+    "shortDesc": "Which animal makes that sound?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/animal-sounds.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/animal-sounds/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "baby-animals",
+    "title": "Baby Animals",
+    "shortDesc": "A baby cat is a kitten! Match the baby names.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/baby-animals.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/baby-animals/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "animal-homes",
+    "title": "Animal Homes",
+    "shortDesc": "Where does each animal live?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/animal-homes.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/animal-homes/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "opposites",
+    "title": "Opposites",
+    "shortDesc": "Hot and cold, big and small — find the opposite.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/opposites.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/opposites/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "rhyme-time",
+    "title": "Rhyme Time",
+    "shortDesc": "Find the word that rhymes.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/rhyme-time.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/rhyme-time/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "first-letter",
+    "title": "First Letter",
+    "shortDesc": "What letter does the picture start with?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/first-letter.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/first-letter/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "letter-after",
+    "title": "What Comes After?",
+    "shortDesc": "Which letter comes next in the alphabet?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/letter-after.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/letter-after/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "letter-before",
+    "title": "What Comes Before?",
+    "shortDesc": "Which letter comes just before?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/letter-before.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/letter-before/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "upper-lower",
+    "title": "Big & Little Letters",
+    "shortDesc": "Match each capital letter to its small letter.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/upper-lower.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/upper-lower/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "days-of-week",
+    "title": "Days of the Week",
+    "shortDesc": "Which day comes next?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/days-of-week.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/days-of-week/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "months-of-year",
+    "title": "Months of the Year",
+    "shortDesc": "Which month comes next?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/months-of-year.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/months-of-year/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "oclock",
+    "title": "What's the Time?",
+    "shortDesc": "Read the clock — what o'clock is it?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/oclock.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/oclock/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "feelings",
+    "title": "Feelings Faces",
+    "shortDesc": "How does this face feel?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/feelings.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/feelings/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "goes-together",
+    "title": "What Goes Together?",
+    "shortDesc": "Find the thing that goes with each picture.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/goes-together.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/goes-together/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "job-tools",
+    "title": "Helpers & Tools",
+    "shortDesc": "Which tool does each helper use?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/job-tools.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/job-tools/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "body-parts",
+    "title": "My Body",
+    "shortDesc": "Name the parts of your body.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/body-parts.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/body-parts/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "weather-wear",
+    "title": "Dress for the Weather",
+    "shortDesc": "What should you wear today?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/weather-wear.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/weather-wear/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "what-animal-eats",
+    "title": "Hungry Animals",
+    "shortDesc": "What does each animal like to eat?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/what-animal-eats.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/what-animal-eats/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "shape-sides",
+    "title": "Count the Sides",
+    "shortDesc": "How many sides does each shape have?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/shape-sides.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/shape-sides/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "add-to-5",
+    "title": "Adding to 5",
+    "shortDesc": "Tiny sums with pictures.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/add-to-5.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/add-to-5/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "add-to-10",
+    "title": "Adding to 10",
+    "shortDesc": "Add numbers up to 10.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/add-to-10.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/add-to-10/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "add-to-20",
+    "title": "Adding to 20",
+    "shortDesc": "Bigger sums up to 20.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/add-to-20.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/add-to-20/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "take-away-5",
+    "title": "Take Away to 5",
+    "shortDesc": "Picture subtraction for beginners.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/take-away-5.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/take-away-5/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "subtract-10",
+    "title": "Subtract within 10",
+    "shortDesc": "Take away numbers up to 10.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/subtract-10.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/subtract-10/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "subtract-20",
+    "title": "Subtract within 20",
+    "shortDesc": "Take away numbers up to 20.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/subtract-20.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/subtract-20/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "doubles",
+    "title": "Double Trouble",
+    "shortDesc": "What is double each number?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/doubles.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/doubles/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "make-ten",
+    "title": "Make Ten",
+    "shortDesc": "What do you add to make 10?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/make-ten.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/make-ten/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "times-2-5-10",
+    "title": "Times Tables 2, 5, 10",
+    "shortDesc": "Practise the easy times tables.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/times-2-5-10.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/times-2-5-10/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "times-tables",
+    "title": "Times Tables Challenge",
+    "shortDesc": "All the times tables up to 10 × 10.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/times-tables.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/times-tables/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "missing-number",
+    "title": "Missing Number",
+    "shortDesc": "Which number is missing in the line?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/missing-number.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/missing-number/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "skip-count",
+    "title": "Skip Counting",
+    "shortDesc": "Count by 2s, 5s and 10s.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/skip-count.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/skip-count/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "number-words",
+    "title": "Number Words",
+    "shortDesc": "Match number words like \"seven\" to 7.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/number-words.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/number-words/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "tens-and-ones",
+    "title": "Tens & Ones",
+    "shortDesc": "How many tens are in the number?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/tens-and-ones.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/tens-and-ones/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "half-of",
+    "title": "Half Of",
+    "shortDesc": "Share equally — what is half?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/half-of.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/half-of/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "bigger-number",
+    "title": "Biggest Number",
+    "shortDesc": "Tap the biggest number.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/bigger-number.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/bigger-number/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "smallest-number",
+    "title": "Smallest Number",
+    "shortDesc": "Tap the smallest number.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/smallest-number.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/smallest-number/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "coin-count",
+    "title": "Count the Coins",
+    "shortDesc": "Add up the 1, 2 and 5 coins.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/coin-count.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/coin-count/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "count-to-5",
+    "title": "Count to 5",
+    "shortDesc": "Count up to five friendly things.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/count-to-5.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/count-to-5/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "count-to-10",
+    "title": "Count to 10",
+    "shortDesc": "Count up to ten.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/count-to-10.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/count-to-10/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "count-to-20",
+    "title": "Count to 20",
+    "shortDesc": "Big counting challenge up to twenty.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/count-to-20.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/count-to-20/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "count-only",
+    "title": "Count Only These",
+    "shortDesc": "Count just one kind of thing in a mixed group.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/count-only.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/count-only/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "count-hands",
+    "title": "Count by Fives",
+    "shortDesc": "Each hand has 5 fingers — count them all!",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/count-hands.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/count-hands/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "count-tens",
+    "title": "Count by Tens",
+    "shortDesc": "Count the boxes of ten.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/count-tens.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/count-tens/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "dice-count",
+    "title": "Dice Dots",
+    "shortDesc": "Add up the dots on two dice.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/dice-count.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/dice-count/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "more-fewer",
+    "title": "Which Has More?",
+    "shortDesc": "Pick the row with more things.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/more-fewer.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/more-fewer/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "odd-animal",
+    "title": "Odd Animal Out",
+    "shortDesc": "Three animals and one that is not!",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/odd-animal.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/odd-animal/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "odd-food",
+    "title": "Odd Food Out",
+    "shortDesc": "Fruit, veggies or treats — which is different?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/odd-food.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/odd-food/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "odd-number",
+    "title": "Odd Number Out",
+    "shortDesc": "Three even numbers and one odd — or the other way!",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/odd-number.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/odd-number/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "odd-letter",
+    "title": "Letters & Numbers",
+    "shortDesc": "Find the number hiding with the letters.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/odd-letter.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/odd-letter/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "odd-weather",
+    "title": "Odd Weather Out",
+    "shortDesc": "Sunny things vs snowy things — which is different?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/odd-weather.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/odd-weather/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "odd-sea",
+    "title": "Sea or Sky?",
+    "shortDesc": "Sea creatures vs flying friends.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/odd-sea.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/odd-sea/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "odd-sport",
+    "title": "Sports or Music?",
+    "shortDesc": "Find the one that is not like the others.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/odd-sport.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/odd-sport/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "odd-color",
+    "title": "Odd Color Out",
+    "shortDesc": "Red things vs yellow things vs green things.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/odd-color.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Quiz",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/odd-color/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "fruit-or-veggie",
+    "title": "Fruit or Veggie?",
+    "shortDesc": "Sort each food into the right basket.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/fruit-or-veggie.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Sort it",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/fruit-or-veggie/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "land-or-sea",
+    "title": "Land or Sea?",
+    "shortDesc": "Does the animal live on land or in the sea?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/land-or-sea.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Sort it",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/land-or-sea/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "hot-or-cold",
+    "title": "Hot or Cold?",
+    "shortDesc": "Sort things that are hot and things that are cold.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/hot-or-cold.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Sort it",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/hot-or-cold/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "even-or-odd",
+    "title": "Even or Odd?",
+    "shortDesc": "Sort numbers into even and odd.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/even-or-odd.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Sort it",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/even-or-odd/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "living-or-not",
+    "title": "Alive or Not?",
+    "shortDesc": "Is it a living thing?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/living-or-not.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Sort it",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/living-or-not/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "day-or-night",
+    "title": "Day or Night?",
+    "shortDesc": "Do you see it in the day or at night?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/day-or-night.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Sort it",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/day-or-night/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "healthy-or-treat",
+    "title": "Healthy or Treat?",
+    "shortDesc": "Sort everyday foods and sometimes treats.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/healthy-or-treat.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Sort it",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/healthy-or-treat/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "vowel-or-not",
+    "title": "Vowel or Consonant?",
+    "shortDesc": "A, E, I, O, U are vowels!",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/vowel-or-not.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Sort it",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/vowel-or-not/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "sink-or-float",
+    "title": "Sink or Float?",
+    "shortDesc": "Will it sink or float in water?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/sink-or-float.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Sort it",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/sink-or-float/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "farm-or-wild",
+    "title": "Farm or Wild?",
+    "shortDesc": "Does the animal live on a farm or in the wild?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/farm-or-wild.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Sort it",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/farm-or-wild/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "can-it-fly",
+    "title": "Can It Fly?",
+    "shortDesc": "Sort things that fly and things that cannot.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/can-it-fly.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Sort it",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/can-it-fly/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "summer-or-winter",
+    "title": "Summer or Winter?",
+    "shortDesc": "Which season would you use it in?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/summer-or-winter.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Sort it",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/summer-or-winter/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "recycle-sort",
+    "title": "Recycle It!",
+    "shortDesc": "Put each item in the right recycling bin.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/recycle-sort.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Sort it",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/recycle-sort/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "big-or-small-number",
+    "title": "Under or Over 10?",
+    "shortDesc": "Is the number smaller or bigger than 10?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/big-or-small-number.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Sort it",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/big-or-small-number/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "order-to-10",
+    "title": "Order 1 to 10",
+    "shortDesc": "Tap numbers from smallest to biggest.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/order-to-10.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Put in order",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/order-to-10/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "order-to-100",
+    "title": "Order Big Numbers",
+    "shortDesc": "Put numbers up to 100 in order.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/order-to-100.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Put in order",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/order-to-100/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "count-down",
+    "title": "Blast Off Countdown",
+    "shortDesc": "Count backwards for the rocket! 🚀",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/count-down.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Put in order",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/count-down/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "order-tens",
+    "title": "Tens in Order",
+    "shortDesc": "Order 10, 20, 30… up to 100.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/order-tens.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Put in order",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/order-tens/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "abc-order",
+    "title": "ABC Order",
+    "shortDesc": "Put letters in alphabet order.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/abc-order.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Put in order",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/abc-order/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "size-order",
+    "title": "Small to Big",
+    "shortDesc": "Order animals from smallest to biggest.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/size-order.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Put in order",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/size-order/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "days-order",
+    "title": "Week in Order",
+    "shortDesc": "Put the days of the week in order.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/days-order.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Put in order",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/days-order/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "months-order",
+    "title": "Months in Order",
+    "shortDesc": "Put the months in order.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/months-order.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Put in order",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/months-order/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "life-cycles",
+    "title": "Life Cycles",
+    "shortDesc": "Egg to butterfly, seed to flower — what comes first?",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/life-cycles.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Put in order",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/life-cycles/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "my-day",
+    "title": "My Day",
+    "shortDesc": "Put a daily routine in order.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/my-day.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Put in order",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/my-day/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "match-upper-lower",
+    "title": "Letter Pairs",
+    "shortDesc": "Flip cards to match big and small letters.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/match-upper-lower.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Memory pairs",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/match-upper-lower/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "match-number-dots",
+    "title": "Number & Dots",
+    "shortDesc": "Match each number to its dots.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/match-number-dots.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Memory pairs",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/match-number-dots/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "match-animal-names",
+    "title": "Animal Word Pairs",
+    "shortDesc": "Match animal pictures to their names.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/match-animal-names.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Memory pairs",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/match-animal-names/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "match-baby-animals",
+    "title": "Mommy & Baby",
+    "shortDesc": "Find each animal and its baby.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/match-baby-animals.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Memory pairs",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/match-baby-animals/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "match-opposites",
+    "title": "Opposite Pairs",
+    "shortDesc": "Flip and match the opposites.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/match-opposites.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Memory pairs",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/match-opposites/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "match-shapes",
+    "title": "Shape Pairs",
+    "shortDesc": "Match shapes with their names.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/match-shapes.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Memory pairs",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/match-shapes/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "match-colors",
+    "title": "Color Pairs",
+    "shortDesc": "Match colors with their names.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/match-colors.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Memory pairs",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/match-colors/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "match-sums",
+    "title": "Sum Pairs",
+    "shortDesc": "Match each sum to its answer.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/match-sums.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Memory pairs",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/match-sums/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "match-rhymes",
+    "title": "Rhyme Pairs",
+    "shortDesc": "Flip cards to find words that rhyme.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/match-rhymes.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Memory pairs",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/match-rhymes/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "match-food-animal",
+    "title": "Feed the Animals",
+    "shortDesc": "Match each animal with its favorite food.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/match-food-animal.html",
+    "category": "Logic & Puzzles",
+    "pack": true,
+    "kind": "Memory pairs",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/match-food-animal/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "match-number-words",
+    "title": "Number Word Pairs",
+    "shortDesc": "Match numbers to number words.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/match-number-words.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Memory pairs",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/match-number-words/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "match-times",
+    "title": "Clock Pairs",
+    "shortDesc": "Match clock faces to the time.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/match-times.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Memory pairs",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/match-times/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "spell-3-letter",
+    "title": "Spell 3-Letter Words",
+    "shortDesc": "Spell short words like CAT and DOG.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/spell-3-letter.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Spelling",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/spell-3-letter/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "spell-animals",
+    "title": "Spell Animals",
+    "shortDesc": "Spell the names of animals.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/spell-animals.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Spelling",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/spell-animals/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "spell-fruits",
+    "title": "Spell Fruits",
+    "shortDesc": "Spell yummy fruit names.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/spell-fruits.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Spelling",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/spell-fruits/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "spell-colors",
+    "title": "Spell Colors",
+    "shortDesc": "Spell the names of colors.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/spell-colors.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Spelling",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/spell-colors/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "spell-body",
+    "title": "Spell Body Parts",
+    "shortDesc": "Spell eye, ear, nose and more.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/spell-body.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Spelling",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/spell-body/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "spell-vehicles",
+    "title": "Spell Vehicles",
+    "shortDesc": "Spell car, bus, train and more.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/spell-vehicles.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Spelling",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/spell-vehicles/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "spell-numbers",
+    "title": "Spell Numbers",
+    "shortDesc": "Spell one, two, three…",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/spell-numbers.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Spelling",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/spell-numbers/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "spell-weather",
+    "title": "Spell Weather",
+    "shortDesc": "Spell sun, rain, snow and more.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/spell-weather.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Spelling",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/spell-weather/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "spell-food",
+    "title": "Spell Food",
+    "shortDesc": "Spell cake, milk, rice and more.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/spell-food.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Spelling",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/spell-food/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "spell-sight-words",
+    "title": "Sight Words",
+    "shortDesc": "Listen and spell words you see every day.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/spell-sight-words.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Spelling",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/spell-sight-words/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "pop-even",
+    "title": "Pop the Even Numbers",
+    "shortDesc": "Pop only the even numbers before time runs out.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/pop-even.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Bubble pop",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/pop-even/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "pop-odd",
+    "title": "Pop the Odd Numbers",
+    "shortDesc": "Pop only the odd numbers.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/pop-odd.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Bubble pop",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/pop-odd/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "pop-vowels",
+    "title": "Pop the Vowels",
+    "shortDesc": "Pop A, E, I, O and U!",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/pop-vowels.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Bubble pop",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/pop-vowels/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "pop-letter-b",
+    "title": "Pop a Letter",
+    "shortDesc": "Pop every bubble with your target letter.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/pop-letter-b.html",
+    "category": "Words & Letters",
+    "pack": true,
+    "kind": "Bubble pop",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/pop-letter-b/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "pop-animals",
+    "title": "Pop the Animals",
+    "shortDesc": "Pop the animals, skip everything else.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/pop-animals.html",
+    "category": "Arcade & Action",
+    "pack": true,
+    "kind": "Bubble pop",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/pop-animals/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "pop-fruits",
+    "title": "Pop the Fruits",
+    "shortDesc": "Pop fruits, skip the veggies!",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/pop-fruits.html",
+    "category": "Arcade & Action",
+    "pack": true,
+    "kind": "Bubble pop",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/pop-fruits/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "pop-make-ten",
+    "title": "Pop to Make 10",
+    "shortDesc": "Pop sums that make 10.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/pop-make-ten.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Bubble pop",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/pop-make-ten/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  },
+  {
+    "id": "pop-big-numbers",
+    "title": "Pop Numbers Over 50",
+    "shortDesc": "Pop only numbers bigger than 50.",
+    "interaction": "tap",
+    "orientation": "portrait",
+    "complexity": "simple",
+    "route": "game/pop-big-numbers.html",
+    "category": "Math & Numbers",
+    "pack": true,
+    "kind": "Bubble pop",
+    "adPolicy": {
+      "banner": true
+    },
+    "assets": [
+      "assets/games/pop-big-numbers/icon.svg"
+    ],
+    "reward": "stars",
+    "priority": 5
+  }
+]

@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8"/>
+	<meta name="viewport" content="width=device-width,initial-scale=1"/>
+	<title>Mini Jigsaw</title>
+	<style>
+		:root{ --bg:#fffef8; --surface:#ffffff; --accent:#f59e0b; --muted:#6b7280; --warn:#dc2626; --ok:#22c55e; --shadow:0 10px 30px rgba(0,0,0,.08); }
+		html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+		body{background:var(--bg);color:#111}
+		.wrap{min-height:100%;display:flex;flex-direction:column}
+		header{padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+		header a{color:#2563eb;text-decoration:none;font-weight:800}
+		.hud{display:flex;gap:12px;align-items:center}
+		.pill{background:#fff;box-shadow:var(--shadow);border-radius:999px;padding:8px 12px;font-weight:800}
+		.btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+		.btn.secondary{background:#e5e7eb;color:#111}
+
+		main{flex:1;display:grid;grid-template-columns:320px 1fr;gap:16px;padding:12px}
+		@media (max-width:900px){ main{grid-template-columns:1fr;grid-auto-rows:minmax(260px,auto)} }
+		.panel{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:14px}
+		.title{margin:0 0 6px;font-size:20px}
+
+		.piece{touch-action:none;cursor:grab;max-width:none !important}
+		.tray .piece{width:min(180px,28vw);height:auto}
+		.tray{min-height:260px;display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start;justify-content:center;padding:10px;position:relative}
+		.piece{width:120px;height:120px;display:block;filter:drop-shadow(0 4px 10px rgba(0,0,0,.22));cursor:grab;user-select:none;touch-action:none}
+		.piece.dragging{opacity:.95;transform:scale(1.05);cursor:grabbing;z-index:1000}
+
+		.boardWrap{position:relative}
+		.board{position:relative;min-height:480px;border-radius:14px;box-shadow:var(--shadow);background:#eceff3;overflow:hidden}
+		.guide{position:absolute;inset:0;background-size:contain;background-position:center;background-repeat:no-repeat;opacity:.18;pointer-events:none}
+		#slots{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:540px;height:360px;background:#f8fafc;border-radius:12px;box-shadow:inset 0 0 0 2px #cbd5e1}
+		.slot{position:absolute;border:2px dashed #cbd5e1;border-radius:10px}
+		.slot.filled{border-color:#86efac;background:#d1fae5}
+
+		.overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45)}
+		.overlay.open{display:flex}
+		.dialog{background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:16px;text-align:center;max-width:420px}
+		.ad-banner{height:60px;background:#fff;border-top:1px solid #eee;display:flex;align-items:center;justify-content:center}
+	</style>
+  <script defer src="/scripts/game-brand.js"></script>
+  <script defer src="/game-shell.js"></script>
+</head>
+<body>
+	<div class="wrap">
+		<header>
+			<a href="/index.html">← Home</a>
+			<div class="hud">
+				<div class="pill">Time: <span id="time">60s</span></div>
+				<div class="pill">Placed: <span id="progress">0/9</span></div>
+				<button class="btn secondary" id="btnShuffle">Shuffle</button>
+			</div>
+		</header>
+
+		<main>
+			<section class="panel">
+				<h2 class="title">Pieces Tray</h2>
+				<div id="tray" class="tray"></div>
+			</section>
+			<section class="panel boardWrap">
+				<h2 class="title">Puzzle Board</h2>
+				<div id="board" class="board">
+					<div id="guide" class="guide"></div>
+					<div id="slots"></div>
+				</div>
+			</section>
+		</main>
+
+		<div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+	</div>
+
+	<div id="modal" class="overlay" role="dialog" aria-modal="true">
+		<div class="dialog">
+			<h2 id="resultTitle">You Win!</h2>
+			<p id="resultDesc" class="legend">Great work! Want to play again?</p>
+			<div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+				<button class="btn" id="btnPlayAgain">Play Again</button>
+				<a class="btn secondary" href="/index.html">Home</a>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// --- Audio helpers ---
+		let _audioCtx=null; function getAC(){ const AC=window.AudioContext||window.webkitAudioContext; if(!_audioCtx && AC){ _audioCtx=new AC(); } return _audioCtx; }
+		function beep(freq=620,dur=0.08,type='sine',vol=0.25){ const ac=getAC(); if(!ac) return; if(ac.state==='suspended'){ try{ac.resume();}catch(_){} } const o=ac.createOscillator(),g=ac.createGain(); o.type=type; o.frequency.value=freq; const t=ac.currentTime; g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(g).connect(ac.destination); o.start(t); o.stop(t+dur); }
+
+		const IMAGES=['/assets/games/jigsaw/animals/lion.svg','/assets/games/jigsaw/animals/fox.svg','/assets/games/jigsaw/animals/elephant.svg']; let imgIdx=Math.floor(Math.random()*IMAGES.length); let IMG_SRC=IMAGES[imgIdx];
+		const GRID={rows:3, cols:3};
+		const SLOT_W=180, SLOT_H=120; // 540x360 board
+		let state={ placed:0, total:GRID.rows*GRID.cols, timer:null, timeLeft:60, pieces:[] };
+
+		function startTimer(sec){ const t=document.getElementById('time'); state.timeLeft=sec; t.textContent=`${state.timeLeft}s`; t.style.color='#111'; if(state.timer) clearInterval(state.timer); state.timer=setInterval(()=>{ state.timeLeft-=1; t.textContent=`${state.timeLeft}s`; if(state.timeLeft<=10){ t.style.color='var(--warn)'; } if(state.timeLeft<=0){ clearInterval(state.timer); endGame(false); } },1000); }
+		function endGame(won){ if(state.timer) clearInterval(state.timer); document.querySelectorAll('.piece').forEach(p=>p.style.pointerEvents='none'); const modal=document.getElementById('modal'); modal.classList.add('open'); document.getElementById('resultTitle').textContent = won ? 'You Win! 🎉' : 'Time’s Up! ⏲️'; document.getElementById('resultDesc').textContent = won ? 'Great work! Want to play again?' : 'Try again and place them faster!'; beep(won?540:240,0.10, won?'sine':'sawtooth', 0.22); if(won && window.Celebration){ try{ window.Celebration.celebrate(); }catch(_){} } }
+		function updateProgress(){ document.getElementById('progress').textContent = `${state.placed}/${state.total}`; }
+
+		// Generate connectors for interlocking shapes
+		function makeConnectors(){
+			const tabsTop=[...Array(GRID.cols)].map(()=>0), tabsLeft=[...Array(GRID.rows)].map(()=>0);
+			const connectors=[];
+			for(let r=0;r<GRID.rows;r++){
+				connectors[r]=[];
+				for(let c=0;c<GRID.cols;c++){
+					const top = r===0 ? 0 : -connectors[r-1][c].bottom;
+					const left = c===0 ? 0 : -connectors[r][c-1].right;
+					const right = c===GRID.cols-1 ? 0 : (Math.random()<0.5?1:-1);
+					const bottom = r===GRID.rows-1 ? 0 : (Math.random()<0.5?1:-1);
+					connectors[r][c]={top,left,right,bottom};
+				}
+			}
+			return connectors;
+		}
+
+		function pathForPiece(ctx, r, c, conn){
+			const x=c*SLOT_W, y=r*SLOT_H;
+			const tab=16; // tab size
+			const midX=x+SLOT_W/2, midY=y+SLOT_H/2;
+			ctx.beginPath(); ctx.moveTo(x,y);
+			// top edge
+			if(conn.top===0){ ctx.lineTo(x+SLOT_W,y); } else { const dir=conn.top; ctx.lineTo(x+SLOT_W/3,y); bump(ctx,x+SLOT_W/2,y,tab,dir,'h'); ctx.lineTo(x+SLOT_W,y); }
+			// right edge
+			if(conn.right===0){ ctx.lineTo(x+SLOT_W,y+SLOT_H); } else { const dir=conn.right; ctx.lineTo(x+SLOT_W,y+SLOT_H/3); bump(ctx,x+SLOT_W,y+SLOT_H/2,tab,dir,'v'); ctx.lineTo(x+SLOT_W,y+SLOT_H); }
+			// bottom edge
+			if(conn.bottom===0){ ctx.lineTo(x,y+SLOT_H); } else { const dir=conn.bottom; ctx.lineTo(x+2*SLOT_W/3,y+SLOT_H); bump(ctx,x+SLOT_W/2,y+SLOT_H,tab,dir,'h'); ctx.lineTo(x,y+SLOT_H); }
+			// left edge
+			if(conn.left===0){ ctx.lineTo(x,y); } else { const dir=conn.left; ctx.lineTo(x,y+2*SLOT_H/3); bump(ctx,x,y+SLOT_H/2,tab,dir,'v'); ctx.lineTo(x,y); }
+			ctx.closePath();
+		}
+		function bump(ctx, cx, cy, s, dir, axis){ // simple tab bump using arcs
+			if(axis==='h'){
+				ctx.lineTo(cx-s, cy);
+				ctx.quadraticCurveTo(cx, cy+dir*s, cx+s, cy);
+			}else{
+				ctx.lineTo(cx, cy-s);
+				ctx.quadraticCurveTo(cx+dir*s, cy, cx, cy+s);
+			}
+		}
+
+		async function buildPuzzle(){
+			const guide=document.getElementById('guide');
+			const slots=document.getElementById('slots'); const tray=document.getElementById('tray');
+			slots.innerHTML=''; tray.innerHTML=''; state.pieces=[]; state.placed=0; updateProgress();
+			const connectors=makeConnectors();
+			// create slots for snapping
+			for(let r=0;r<GRID.rows;r++) for(let c=0;c<GRID.cols;c++){
+				const s=document.createElement('div'); s.className='slot'; s.style.left=(c*SLOT_W)+'px'; s.style.top=(r*SLOT_H)+'px'; s.style.width=SLOT_W+'px'; s.style.height=SLOT_H+'px'; s.dataset.index=String(r*GRID.cols+c); slots.appendChild(s);
+			}
+			// load source image to draw pieces
+			let full;
+			try{
+				const img=await loadImage(IMG_SRC);
+				guide.style.backgroundImage=`url('${IMG_SRC}')`;
+				full=document.createElement('canvas'); full.width=SLOT_W*GRID.cols; full.height=SLOT_H*GRID.rows; const fctx=full.getContext('2d'); fctx.drawImage(img,0,0,full.width,full.height);
+			}catch(err){
+				console.warn('Jigsaw image failed, using color fallback', err);
+				guide.style.backgroundImage='none';
+				// build a simple gradient board as fallback
+				full=document.createElement('canvas'); full.width=SLOT_W*GRID.cols; full.height=SLOT_H*GRID.rows; const fctx=full.getContext('2d');
+				const g=fctx.createLinearGradient(0,0,full.width,full.height); g.addColorStop(0,'#93c5fd'); g.addColorStop(1,'#fda4af'); fctx.fillStyle=g; fctx.fillRect(0,0,full.width,full.height);
+			}
+			// build each piece as masked image
+			for(let r=0;r<GRID.rows;r++){
+				for(let c=0;c<GRID.cols;c++){
+					const conn=connectors[r][c];
+					const pc=document.createElement('canvas'); pc.width=SLOT_W; pc.height=SLOT_H; const pctx=pc.getContext('2d');
+					// draw path
+					pctx.save();
+					pathForPiece(pctx,0,0,conn);
+					pctx.clip();
+					pctx.drawImage(full, -c*SLOT_W, -r*SLOT_H);
+					pctx.restore();
+					// outline
+					pctx.lineWidth=2; pctx.strokeStyle='#111'; pathForPiece(pctx,0,0,conn); pctx.stroke();
+					  const url=pc.toDataURL();
+					  const imgEl=document.createElement('img'); imgEl.src=url; imgEl.alt=`piece ${r}-${c}`; imgEl.className='piece'; imgEl.draggable=false;
+					const piece={el:imgEl, r, c, index:r*GRID.cols+c};
+					state.pieces.push(piece);
+					enableDrag(piece);
+				}
+			}
+		}
+
+
+		function enableDrag(piece){
+			const el=piece.el; let startX=0,startY=0,drag=false, originParent=null, originNext=null;
+			el.addEventListener('pointerdown',(e)=>{
+				e.preventDefault(); drag=true; originParent=el.parentElement; originNext=el.nextSibling; const r=el.getBoundingClientRect(); startX=e.clientX-r.left; startY=e.clientY-r.top; el.setPointerCapture(e.pointerId); el.classList.add('dragging');
+				// move to fixed for free dragging
+				el.style.position='fixed'; el.style.left=`${r.left}px`; el.style.top=`${r.top}px`; beep(720,0.08,'triangle',0.22);
+			});
+			el.addEventListener('pointermove',(e)=>{ if(!drag) return; el.style.left=`${e.clientX-startX}px`; el.style.top=`${e.clientY-startY}px`; });
+			el.addEventListener('pointerup',(e)=>{ if(!drag) return; drag=false; el.classList.remove('dragging'); try{ el.releasePointerCapture(e.pointerId);}catch(_){}
+				const slot = nearestSlot(piece);
+				const srect = slot.getBoundingClientRect(); const prect=el.getBoundingClientRect(); const dx=(prect.left+prect.width/2)-(srect.left+srect.width/2); const dy=(prect.top+prect.height/2)-(srect.top+srect.height/2);
+				const dist=Math.hypot(dx,dy);
+				if(dist<Math.max(40,srect.width*0.3) && !slot.classList.contains('filled')){ // snap
+					slot.classList.add('filled'); el.style.position='absolute'; el.style.left='0'; el.style.top='0'; el.style.width='100%'; el.style.height='100%'; el.style.pointerEvents='none'; slot.appendChild(el); state.placed+=1; updateProgress(); beep(540,0.09,'sine',0.26); if(state.placed===state.total) endGame(true);
+				} else {
+					// return to tray
+					el.style.position=''; el.style.left=''; el.style.top='';
+					if(originNext) originParent.insertBefore(el, originNext); else originParent.appendChild(el);
+					beep(240,0.07,'sawtooth',0.18);
+				}
+			});
+		}
+
+		function nearestSlot(piece){
+			const idx=piece.index; return document.querySelector(`.slot[data-index="${idx}"]`);
+		}
+
+		function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+
+		function shuffleTray(){ const tray=document.getElementById('tray'); const ps=state.pieces.map(p=>p.el); for(let i=ps.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [ps[i],ps[j]]=[ps[j],ps[i]]; } ps.forEach(el=>tray.appendChild(el)); }
+		function fitBoard(){ const slots=document.getElementById('slots'); const board=document.getElementById('board'); const avail=board.clientWidth-16; const k=Math.min(1,avail/540); slots.style.transform=`translate(-50%,-50%) scale(${k})`; board.style.minHeight=Math.max(260,360*k+40)+'px'; }
+		function init(){ imgIdx=(imgIdx+1)%IMAGES.length; IMG_SRC=IMAGES[imgIdx]; document.getElementById('tray').innerHTML=''; startTimer(90); buildPuzzle().then(()=>{ shuffleTray(); fitBoard(); }); }
+		function restart(){ document.getElementById('modal').classList.remove('open'); init(); }
+
+		window.addEventListener('DOMContentLoaded', ()=>{
+			init();
+			document.getElementById('btnShuffle').addEventListener('click', init);
+			document.getElementById('btnPlayAgain').addEventListener('click', restart);
+			window.addEventListener('resize', fitBoard);
+		});
+	</script>
+</body>
+</html>
+

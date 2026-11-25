@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Number Matching Game</title>
+  <style>
+    :root{--bg:#f8fbff;--card:#ffffff;--accent:#2563eb;--muted:#6b7280}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;background:var(--bg);color:#0f172a}
+    .wrap{min-height:100vh;display:flex;flex-direction:column}
+    header{padding:12px 14px;display:flex;align-items:center;justify-content:space-between}
+    h1{font-size:18px;margin:0}
+    .controls{display:flex;gap:10px;align-items:center}
+    .btn{background:#fff;border:1px solid #e6e6e6;padding:8px 10px;border-radius:8px;font-weight:600}
+    .stats{display:flex;gap:12px;align-items:center;font-size:14px;color:var(--muted)}
+    main{flex:1;padding:12px 12px 0}
+    /* perspective is required for 3D card flip to render correctly on some browsers/devices */
+    .board{width:100%;max-width:980px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(76px,1fr));gap:10px;perspective:1000px;-webkit-perspective:1000px}
+    /* card wrapper - keep 3D children and add vendor prefixes for broader support */
+    /* reset button appearance (we use <button> for accessibility) and ensure 3D flip works */
+    .card{background:transparent;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.06);aspect-ratio:1/1;display:block;cursor:pointer;user-select:none;position:relative;overflow:visible;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;transition:transform 360ms cubic-bezier(.2,.9,.2,1);border:none;padding:0;appearance:none;-webkit-appearance:none}
+    .card.flipped{transform:rotateY(180deg);-webkit-transform:rotateY(180deg)}
+    .card .face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;-webkit-backface-visibility:hidden;backface-visibility:hidden;font-size:32px;border-radius:10px;padding:6px;box-sizing:border-box;line-height:1}
+    .card .front{background:linear-gradient(180deg,#fff,#f8fbff);color:#0f172a}
+    .card .back{background:linear-gradient(180deg,#2563eb,#1e40af);color:#fff;transform:rotateY(180deg);-webkit-transform:rotateY(180deg);font-size:32px;font-weight:700}
+    /* layer ordering to ensure back face is visible when flipped across browsers */
+    .card .front{z-index:2}
+    .card .back{z-index:1}
+    .card.flipped .front{z-index:1}
+    .card.flipped .back{z-index:2}
+    /* ensure the front shows a question mark so users see the flip action clearly */
+    .card .front::after{content:'?';font-size:24px;color:#9aa6c3}
+    /* make locked visual clearer */
+    .card.locked{opacity:0.6;cursor:default}
+    .controls-row{padding:8px 12px;display:flex;gap:10px;align-items:center;justify-content:center}
+    .cele{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:200}
+    .cele.show{display:flex}
+    .cele .card{background:rgba(255,255,255,0.98);padding:18px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.12);text-align:center}
+    .ad-banner{height:64px;background:#fff;border-top:1px solid #eee;display:flex;align-items:center;justify-content:center}
+    @media(max-width:420px){ .card{font-size:20px} .card .face{font-size:22px} }
+    /* fallback styles when 3D transforms/backface-visibility are not supported */
+    .no-3d .card .front{opacity:1;pointer-events:auto}
+    .no-3d .card .back{opacity:0;pointer-events:none}
+    .no-3d .card.flipped .front{opacity:0;pointer-events:none}
+    .no-3d .card.flipped .back{opacity:1;pointer-events:auto}
+    .no-3d .card .front,.no-3d .card .back{transition:opacity 220ms ease}
+  </style>
+  <script>
+    // detect support for 3D transforms and backface-visibility; if missing, add `no-3d` class
+    (function(){
+      try{
+        var supports3d = false;
+        if (window.CSS && CSS.supports) {
+          supports3d = CSS.supports('transform-style','preserve-3d') && CSS.supports('backface-visibility','hidden');
+        } else {
+          // fallback: create element and test style presence
+          var el = document.createElement('div');
+          supports3d = ('webkitBackfaceVisibility' in el.style) || ('backfaceVisibility' in el.style);
+        }
+        if (!supports3d) document.documentElement.classList.add('no-3d');
+      }catch(e){ document.documentElement.classList.add('no-3d'); }
+    })();
+    // small helper comment: buildBoard will initialize front/back visibility for older browsers too
+  </script>
+  <script defer src="/scripts/game-brand.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Number Matching</h1>
+      <div class="controls">
+        <div class="stats"><strong id="score">0</strong>&nbsp;points</div>
+        <div class="stats">Attempts: <strong id="attempts">0</strong></div>
+        <button id="newBtn" class="btn">New Game</button>
+        <a href="/index.html" class="btn">Home</a>
+      </div>
+    </header>
+
+    <main>
+      <div class="board" id="board" aria-live="polite" aria-label="Matching cards"></div>
+    </main>
+
+    <div class="controls-row">
+      <div id="message" style="color:var(--muted)">Find matching pairs — tap to flip.</div>
+    </div>
+
+    <div class="ad-banner" aria-hidden="true">AD_BANNER_PLACEHOLDER</div>
+
+    <div id="cele" class="cele"><div class="card"><h2>Well done! 🎊</h2><p id="finalText">You matched all pairs. Score: <span id="finalScore">0</span></p></div></div>
+  </div>
+
+  <script>
+    (function(){
+      const board = document.getElementById('board');
+      const newBtn = document.getElementById('newBtn');
+      const scoreEl = document.getElementById('score');
+      const attemptsEl = document.getElementById('attempts');
+      const message = document.getElementById('message');
+      const cele = document.getElementById('cele');
+      const finalScore = document.getElementById('finalScore');
+
+      // audio
+      const ctx = (window.AudioContext||window.webkitAudioContext) ? new (window.AudioContext||window.webkitAudioContext)() : null;
+      function tone(freq,d=0.08){ if(!ctx) return; const o=ctx.createOscillator(), g=ctx.createGain(); o.type='sine'; o.frequency.value=freq; g.gain.value=0.06; o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + d); }
+
+      // create 20 cards (10 pairs)
+      const TOTAL_CARDS = 20;
+      let values = []; // array of values for pairs
+      let first = null; let second = null; let lock = false; let score = 0; let attempts = 0; let matched = 0;
+
+      function generateValues(){
+        const pool = [];
+        // mix numbers, letters, and simple symbols for variety
+        for(let i=1;i<=50;i++) pool.push(i.toString());
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+        letters.forEach(l=>pool.push(l));
+        const symbols = ['★','❤','⚑','☼','☾','♫','⚽','✿','✈','☕'];
+        symbols.forEach(s=>pool.push(s));
+
+        // pick 10 unique items randomly
+        const chosen = [];
+        const temp = pool.slice();
+        for(let i=0;i<10;i++){ const idx = Math.floor(Math.random()*temp.length); chosen.push(temp.splice(idx,1)[0]); }
+        // create pairs
+        let pairs = [];
+        chosen.forEach((v,i)=>{ pairs.push({id:i,value:v}); pairs.push({id:i,value:v}); });
+        // shuffle pairs
+        for(let i=pairs.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pairs[i],pairs[j]]=[pairs[j],pairs[i]]; }
+        return pairs;
+      }
+
+      function buildBoard(){
+        board.innerHTML=''; values = generateValues(); score = 0; attempts = 0; matched = 0; first = null; second = null; lock=false; scoreEl.textContent = score; attemptsEl.textContent = attempts; cele.classList.remove('show');
+        values.forEach((p, idx)=>{
+          const c = document.createElement('button'); c.className='card'; c.setAttribute('aria-pressed','false'); c.dataset.pair = p.id; c.dataset.index = idx; c.innerHTML = '<div class="face front"></div><div class="face back">'+escapeHtml(p.value)+'</div>';
+          // initialize visibility for browsers without 3D support
+          const front = c.querySelector('.front'); const back = c.querySelector('.back'); if(front) front.style.visibility = 'visible'; if(back) back.style.visibility = 'hidden';
+          // ensure front has an explicit marker for older browsers and assistive tech
+          if(front){ front.innerHTML = '<span aria-hidden="true">?</span>'; front.style.opacity = '1'; front.style.pointerEvents = 'auto'; }
+          if(back){ back.style.opacity = '0'; back.style.pointerEvents = 'none'; }
+          // use pointerdown for most pointer/touch devices to avoid duplicate events
+          c.addEventListener('pointerdown', function(ev){
+            // prevent default to avoid emulated mouse events and ensure single handling
+            try{ ev.preventDefault(); }catch(e){}
+            onCardClick(ev);
+          }, {passive:false});
+          board.appendChild(c);
+        });
+      }
+
+      function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+      function onCardClick(e){
+        if(lock) return;
+        // support events from pointer/pointerdown where currentTarget may be undefined
+        const card = e.currentTarget || (e.target && e.target.closest ? e.target.closest('.card') : null);
+        if(!card) return;
+        console.log('card clicked or tapped', card.dataset.index, card.dataset.pair);
+        if(card.classList.contains('flipped') || card.classList.contains('locked')) return;
+        flipCard(card);
+
+        if(!first){ first = card; tone(660,0.06); return; }
+        if(first === card) return;
+        second = card; lock = true; attempts++; attemptsEl.textContent = attempts;
+        // compare
+        if(first.dataset.pair === second.dataset.pair){ // match
+          first.classList.add('locked'); second.classList.add('locked'); matched += 2; score += 20; scoreEl.textContent = score; tone(880,0.12);
+          // small visual confirmation
+          setTimeout(()=>{ first.style.transform = 'scale(1.02)'; second.style.transform = 'scale(1.02)'; setTimeout(()=>{ first.style.transform=''; second.style.transform=''; },200); },80);
+          first=null; second=null; lock=false; checkComplete();
+        } else {
+          // mismatch
+          score = Math.max(0, score-2); scoreEl.textContent = score; tone(220,0.12);
+          setTimeout(()=>{ unflip(first); unflip(second); first=null; second=null; lock=false; },700);
+        }
+      }
+
+      // flip with 3D transform and fallback: toggle visibility so older devices show the value
+      function flipCard(card){
+        card.classList.add('flipped'); card.setAttribute('aria-pressed','true');
+        const front = card.querySelector('.front'); const back = card.querySelector('.back');
+        if(front && back){
+          // try CSS 3D flip; also update visibility/opacity/pointerEvents for robust fallback
+          try{
+            front.style.visibility = 'hidden'; back.style.visibility = 'visible';
+            front.style.opacity = '0'; back.style.opacity = '1';
+            front.style.pointerEvents = 'none'; back.style.pointerEvents = 'auto';
+          }catch(e){}
+        }
+      }
+      function unflip(card){
+        card.classList.remove('flipped'); card.setAttribute('aria-pressed','false');
+        const front = card.querySelector('.front'); const back = card.querySelector('.back');
+        if(front && back){
+          front.style.visibility = 'visible'; back.style.visibility = 'hidden';
+          front.style.opacity = '1'; back.style.opacity = '0';
+          front.style.pointerEvents = 'auto'; back.style.pointerEvents = 'none';
+        }
+      }
+
+      function checkComplete(){ if(matched >= TOTAL_CARDS){ // celebration
+          finalScore.textContent = score; cele.classList.add('show'); // confetti
+          for(let i=0;i<24;i++){ const d = document.createElement('div'); d.style.position='fixed'; d.style.left=(10+Math.random()*80)+'%'; d.style.top=(10+Math.random()*30)+'%'; d.style.width='10px'; d.style.height='12px'; d.style.background = ['#ff5c8a','#ffd166','#8bd3ff','#7bf1a8'][i%4]; d.style.borderRadius='2px'; d.style.zIndex=300; d.style.opacity=0.95; d.style.transform='translateY(0) rotate('+Math.floor(Math.random()*360)+'deg)'; d.style.transition='top 1400ms ease, opacity 1400ms'; document.body.appendChild(d); setTimeout(()=>{ d.style.top = (80+Math.random()*20)+'%'; d.style.opacity = 0; },50); setTimeout(()=>d.remove(),1500); }
+          tone(880,0.3);
+        } }
+
+      newBtn.addEventListener('click', buildBoard);
+
+      // init
+      buildBoard();
+
+      // expose for debug
+      window.__numberMatch = { rebuild: buildBoard };
+    })();
+  </script>
+</body>
+</html>

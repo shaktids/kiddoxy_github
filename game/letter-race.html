@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Letter Race</title>
+  <link rel="icon" href="/kiddoxy.png" type="image/png">
+  <link rel="stylesheet" href="/styles/kid-kit.css">
+  <link rel="stylesheet" href="/styles/quiz-race.css">
+  <script defer src="/scripts/game-brand.js"></script>
+  <script defer src="/game-shell.js"></script>
+  <script src="/scripts/kid-kit.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="game-header">
+    <h1>🔤 Letter Race</h1>
+    <div class="hud">
+      <span class="pill">Place: <span id="place">–</span></span>
+      <button class="btn secondary icon-btn" id="muteBtn" aria-label="Sound">🔊</button>
+    </div>
+  </header>
+  <main class="game-main">
+    <div class="panel">
+      <div class="track" id="track" aria-label="Race track"></div>
+      <div id="startPanel" class="start-panel">
+        <p class="prompt" style="margin-top:16px">Tap the right letter to race to the finish!</p>
+        <div class="seg" id="levelSeg" role="group" aria-label="Level"><button data-level="0" class="active">Same letter</button><button data-level="1">A → a</button><button data-level="2">First sound</button></div>
+        <div><button class="btn" id="go">🏁 Start race</button></div>
+      </div>
+      <div id="racePanel" hidden>
+        <div class="question" id="question" aria-live="polite"></div>
+        <div class="options" id="options"></div>
+        <div class="feedback" id="feedback" aria-live="polite"></div>
+      </div>
+    </div>
+  </main>
+  <div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+</div>
+<script>
+// Letter Race: level 0 = find the same letter, 1 = uppercase to lowercase, 2 = first letter of a picture word
+const WORDS = [['🍎','apple'],['🐻','bear'],['🐱','cat'],['🐶','dog'],['🥚','egg'],['🐟','fish'],['🍇','grapes'],['🎩','hat'],['🍦','ice cream'],['🧃','juice'],['🪁','kite'],['🦁','lion'],['🌙','moon'],['🪺','nest'],['🐙','octopus'],['🐷','pig'],['👑','queen'],['🌈','rainbow'],['☀️','sun'],['🌳','tree'],['☂️','umbrella'],['🚐','van'],['🐋','whale'],['🦓','zebra']];
+const ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+window.QUIZ_RACE = {
+  key: 'letter-race',
+  question(level) {
+    if (level === 2) {
+      const [e, w] = Kit.pick(WORDS); const ans = w[0].toUpperCase();
+      const opts = new Set([ans]); while (opts.size < 4) opts.add(Kit.pick(ABC));
+      return { text: `${e} = ?`, say: w, answer: ans, options: [...opts] };
+    }
+    const L = Kit.pick(ABC);
+    const opts = new Set([L]); while (opts.size < 4) opts.add(Kit.pick(ABC));
+    const lower = level === 1;
+    return { text: lower ? `${L} → ?` : `Find ${L}`, say: L, answer: lower ? L.toLowerCase() : L, options: [...opts].map(x => lower ? x.toLowerCase() : x) };
+  }
+};
+</script>
+<script src="/scripts/quiz-race.js"></script>
+</body>
+</html>

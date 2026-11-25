@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Alphabet Animal Match</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/styles/games.css">
+  <style>
+    :root {
+      --bg-top: #dcfce7;
+      --bg-bottom: #fef08a;
+      --surface: #ffffffea;
+      --ink: #166534;
+      --muted: #22c55e;
+      --accent: #ea580c;
+      --ok: #22c55e;
+      --warn: #dc2626;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Trebuchet MS", "Comic Sans MS", Arial, sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at 20% 30%, var(--bg-top), transparent 40%),
+                  radial-gradient(circle at 80% 50%, #fbbf24, transparent 35%),
+                  radial-gradient(circle at 50% 100%, var(--bg-bottom), transparent 50%),
+                  #f0fdf4;
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+    }
+
+    .shell {
+      width: min(560px, 96vw);
+      margin: 0 auto;
+      padding: 16px 16px 100px;
+    }
+
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .title-icon {
+      font-size: 2.4rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(24px, 6vw, 32px);
+      color: var(--ink);
+      font-weight: 900;
+    }
+
+    .helper {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      margin: 8px 0 12px;
+      font-weight: 700;
+    }
+
+    .status-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .stats {
+      background: var(--surface);
+      border-radius: 12px;
+      border: 2px solid var(--muted);
+      padding: 10px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--ink);
+    }
+
+    .letter-card {
+      background: linear-gradient(135deg, var(--muted), #86efac);
+      border: 3px solid var(--accent);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 120px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      font-size: clamp(60px, 14vw, 96px);
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+
+    .controls-top {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      border: none;
+      background: linear-gradient(135deg, var(--accent), #f97316);
+      color: #fff;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s, box-shadow 0.12s;
+      flex: 1;
+      min-width: 80px;
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn.secondary {
+      background: linear-gradient(135deg, #9ca3af, #6b7280);
+    }
+
+    .btn[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 2px solid var(--muted);
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    .panel-title {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink);
+      margin: 0 0 10px;
+    }
+
+    .choices,
+    .images {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .name-btn {
+      border: 2px solid var(--muted);
+      border-radius: 10px;
+      background: #fff;
+      padding: 10px;
+      font-size: clamp(14px, 3vw, 16px);
+      font-weight: 700;
+      color: var(--ink);
+      cursor: pointer;
+      transition: transform 0.12s, background 0.12s, border-color 0.12s;
+    }
+
+    .name-btn:active {
+      transform: scale(0.98);
+    }
+
+    .name-btn.selected {
+      border-color: var(--accent);
+      background: #fed7aa;
+      transform: translateY(-2px);
+    }
+
+    .name-btn.matched {
+      border-color: var(--ok);
+      background: #dcfce7;
+      color: #166534;
+      cursor: default;
+    }
+
+    .image-card {
+      border: 2px solid var(--muted);
+      border-radius: 10px;
+      background: #fff;
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: transform 0.12s, border-color 0.12s, background 0.12s;
+      padding: 8px;
+    }
+
+    .image-card:active {
+      transform: scale(0.98);
+    }
+
+    .image-card .emoji {
+      font-size: clamp(36px, 8vw, 48px);
+      line-height: 1;
+    }
+
+    .image-card .hint {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .image-card.matched {
+      border-color: var(--ok);
+      background: #dcfce7;
+      cursor: default;
+    }
+
+    .message {
+      text-align: center;
+      min-height: 28px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .message.ok { color: var(--ok); }
+    .message.no { color: var(--warn); }
+
+    .fixed-controls {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(240,253,244,0), rgba(240,253,244,0.98));
+      backdrop-filter: blur(4px);
+      z-index: 30;
+    }
+
+    .fixed-controls .btn {
+      min-width: 140px;
+      font-size: 14px;
+    }
+
+    @media (max-width: 700px) {
+      .shell {
+        padding: 14px 14px 100px;
+      }
+      .status-row {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      .stats {
+        font-size: 12px;
+        padding: 8px;
+      }
+      .board {
+        gap: 10px;
+      }
+      .panel {
+        padding: 10px;
+      }
+      .panel-title {
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+      .name-btn {
+        padding: 8px;
+        font-size: clamp(13px, 2.8vw, 14px);
+      }
+      .image-card {
+        min-height: 72px;
+        padding: 6px;
+      }
+      .image-card .emoji {
+        font-size: clamp(32px, 7vw, 40px);
+      }
+      .image-card .hint {
+        font-size: 10px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .title-icon {
+        font-size: 2rem;
+      }
+      h1 {
+        font-size: 24px;
+      }
+      .letter-card {
+        min-height: 100px;
+        font-size: clamp(50px, 12vw, 80px);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .shell {
+        padding: 12px 12px 100px;
+        width: min(100%, 96vw);
+      }
+      h1 {
+        font-size: 20px;
+      }
+      .title-icon {
+        font-size: 1.8rem;
+      }
+      .letter-card {
+        min-height: 90px;
+        font-size: clamp(45px, 10vw, 70px);
+      }
+      .board {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .controls-top {
+        gap: 6px;
+      }
+      .btn {
+        padding: 9px 12px;
+        font-size: 11px;
+        min-width: 70px;
+      }
+      .fixed-controls .btn {
+        min-width: 110px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="shell">
+      <div class="title-wrap">
+        <span class="title-icon">🦁</span>
+        <h1>Animal Match</h1>
+      </div>
+      <p class="helper">Pick animal name, match the picture!</p>
+
+      <div class="status-row">
+        <div class="stats">Round: <span id="roundText">1/26</span></div>
+        <div class="stats">Matches: <span id="scoreText">0</span></div>
+        <div class="stats">Letter: <span id="groupText">A</span></div>
+      </div>
+
+      <div class="letter-card" id="letterCard">A</div>
+
+      <div class="controls-top">
+        <button id="voiceNormalBtn" class="btn active" type="button">Normal 🔊</button>
+        <button id="voiceCalmBtn" class="btn" type="button">Calm 🤐</button>
+        <button id="voiceToggleBtn" class="btn active" type="button">Voice 🔔</button>
+      </div>
+
+      <section class="board">
+        <article class="panel">
+          <h2 class="panel-title">🗣️ Names</h2>
+          <div id="nameChoices" class="choices" aria-live="polite"></div>
+        </article>
+
+        <article class="panel">
+          <h2 class="panel-title">👀 Pictures</h2>
+          <div id="imageChoices" class="images" aria-live="polite"></div>
+        </article>
+      </section>
+
+      <div id="message" class="message">Pick a name!</div>
+    </div>
+  </div>
+
+  <div class="fixed-controls">
+    <button id="restartBtn" class="btn secondary" type="button">Restart ↻</button>
+    <button id="nextBtn" class="btn" type="button" disabled>Next ➜</button>
+  </div>
+
+  <div id="ageModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Age verification">
+    <div class="modal-content">
+      <h2>Are you a parent?</h2>
+      <p>Please enter your birth year to continue to parental settings.</p>
+      <input id="birthYear" type="number" placeholder="e.g. 1980" min="1900" max="2025" />
+      <div class="modal-actions">
+        <button id="ageSubmit">Confirm</button>
+        <button id="ageCancel" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const ANIMAL_BANK = {
+        A: [
+          { name: "Ant", image: "🐜" },
+          { name: "Ape", image: "🐒" },
+          { name: "Alligator", image: "🐊" },
+          { name: "Armadillo", image: "🦔" }
+        ],
+        B: [
+          { name: "Bear", image: "🐻" },
+          { name: "Bee", image: "🐝" },
+          { name: "Bird", image: "🐦" },
+          { name: "Bison", image: "🐂" }
+        ],
+        C: [
+          { name: "Cat", image: "🐱" },
+          { name: "Cow", image: "🐄" },
+          { name: "Camel", image: "🐫" },
+          { name: "Crab", image: "🦀" }
+        ],
+        D: [
+          { name: "Deer", image: "🦌" },
+          { name: "Dolphin", image: "🐬" },
+          { name: "Duck", image: "🦆" },
+          { name: "Donkey", image: "🐴" }
+        ],
+        E: [
+          { name: "Elephant", image: "🐘" },
+          { name: "Eagle", image: "🦅" },
+          { name: "Eel", image: "🐟" },
+          { name: "Emu", image: "🐦" }
+        ],
+        F: [
+          { name: "Fox", image: "🦊" },
+          { name: "Frog", image: "🐸" },
+          { name: "Fish", image: "🐠" },
+          { name: "Falcon", image: "🦅" }
+        ],
+        G: [
+          { name: "Goat", image: "🐐" },
+          { name: "Giraffe", image: "🦒" },
+          { name: "Gorilla", image: "🦍" },
+          { name: "Goose", image: "🪿" }
+        ],
+        H: [
+          { name: "Horse", image: "🐴" },
+          { name: "Hippo", image: "🦛" },
+          { name: "Hedgehog", image: "🦔" },
+          { name: "Hamster", image: "🐹" }
+        ],
+        I: [
+          { name: "Iguana", image: "🦎" },
+          { name: "Impala", image: "🦌" },
+          { name: "Ibex", image: "🐐" },
+          { name: "Ibis", image: "🦩" }
+        ],
+        J: [
+          { name: "Jaguar", image: "🐆" },
+          { name: "Jellyfish", image: "🪼" },
+          { name: "Jackal", image: "🐺" },
+          { name: "Jay", image: "🐦" }
+        ],
+        K: [
+          { name: "Kangaroo", image: "🦘" },
+          { name: "Koala", image: "🐨" },
+          { name: "Kingfisher", image: "🐦" },
+          { name: "Kiwi", image: "🐦" }
+        ],
+        L: [
+          { name: "Lion", image: "🦁" },
+          { name: "Leopard", image: "🐆" },
+          { name: "Llama", image: "🦙" },
+          { name: "Lobster", image: "🦞" }
+        ],
+        M: [
+          { name: "Monkey", image: "🐒" },
+          { name: "Moose", image: "🫎" },
+          { name: "Mouse", image: "🐭" },
+          { name: "Manta", image: "🐟" }
+        ],
+        N: [
+          { name: "Newt", image: "🦎" },
+          { name: "Narwhal", image: "🐋" },
+          { name: "Nightingale", image: "🐦" },
+          { name: "Numbat", image: "🐿️" }
+        ],
+        O: [
+          { name: "Octopus", image: "🐙" },
+          { name: "Otter", image: "🦦" },
+          { name: "Owl", image: "🦉" },
+          { name: "Orca", image: "🐋" }
+        ],
+        P: [
+          { name: "Panda", image: "🐼" },
+          { name: "Penguin", image: "🐧" },
+          { name: "Parrot", image: "🦜" },
+          { name: "Peacock", image: "🦚" }
+        ],
+        Q: [
+          { name: "Quail", image: "🐦" },
+          { name: "Quokka", image: "🐹" },
+          { name: "Queen Angelfish", image: "🐠" },
+          { name: "Quetzal", image: "🦜" }
+        ],
+        R: [
+          { name: "Rabbit", image: "🐰" },
+          { name: "Raccoon", image: "🦝" },
+          { name: "Rhino", image: "🦏" },
+          { name: "Rooster", image: "🐓" }
+        ],
+        S: [
+          { name: "Sheep", image: "🐑" },
+          { name: "Snake", image: "🐍" },
+          { name: "Seal", image: "🦭" },
+          { name: "Squirrel", image: "🐿️" }
+        ],
+        T: [
+          { name: "Tiger", image: "🐯" },
+          { name: "Turtle", image: "🐢" },
+          { name: "Toucan", image: "🐦" },
+          { name: "Turkey", image: "🦃" }
+        ],
+        U: [
+          { name: "Urial", image: "🐏" },
+          { name: "Uakari", image: "🐒" },
+          { name: "Umbrellabird", image: "🐦" },
+          { name: "Urchin", image: "🐚" }
+        ],
+        V: [
+          { name: "Vulture", image: "🦅" },
+          { name: "Viper", image: "🐍" },
+          { name: "Vicuna", image: "🦙" },
+          { name: "Vole", image: "🐭" }
+        ],
+        W: [
+          { name: "Whale", image: "🐋" },
+          { name: "Wolf", image: "🐺" },
+          { name: "Walrus", image: "🦭" },
+          { name: "Wombat", image: "🐹" }
+        ],
+        X: [
+          { name: "Xerus", image: "🐿️" },
+          { name: "Xray Tetra", image: "🐟" },
+          { name: "Xenops", image: "🐦" },
+          { name: "Xantus Hummingbird", image: "🐦" }
+        ],
+        Y: [
+          { name: "Yak", image: "🐂" },
+          { name: "Yellowhammer", image: "🐦" },
+          { name: "Yabby", image: "🦞" },
+          { name: "Yellow Tang", image: "🐠" }
+        ],
+        Z: [
+          { name: "Zebra", image: "🦓" },
+          { name: "Zebu", image: "🐄" },
+          { name: "Zorilla", image: "🦨" },
+          { name: "Zander", image: "🐟" }
+        ]
+      };
+
+      let rounds = [];
+
+      let currentRoundIndex = 0;
+      let selectedName = null;
+      let totalMatches = 0;
+
+      const letterCard = document.getElementById("letterCard");
+      const groupText = document.getElementById("groupText");
+      const roundText = document.getElementById("roundText");
+      const scoreText = document.getElementById("scoreText");
+      const message = document.getElementById("message");
+      const nameChoices = document.getElementById("nameChoices");
+      const imageChoices = document.getElementById("imageChoices");
+      const restartBtn = document.getElementById("restartBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const voiceNormalBtn = document.getElementById("voiceNormalBtn");
+      const voiceCalmBtn = document.getElementById("voiceCalmBtn");
+      const voiceToggleBtn = document.getElementById("voiceToggleBtn");
+
+      function shuffle(list) {
+        const out = list.slice();
+        for (let i = out.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const tmp = out[i];
+          out[i] = out[j];
+          out[j] = tmp;
+        }
+        return out;
+      }
+
+      function buildRounds() {
+        return Object.keys(ANIMAL_BANK).map(function (letter) {
+          const animals = shuffle(ANIMAL_BANK[letter]).slice(0, 3);
+          return { letter: letter, animals: animals };
+        });
+      }
+
+      function setMessage(text, kind) {
+        message.textContent = text;
+        message.className = "message" + (kind ? " " + kind : "");
+      }
+
+      let cachedVoice = null;
+      let lastSpokenText = "";
+      let lastSpokenAt = 0;
+      let voiceMode = localStorage.getItem("kdx_voice_mode") || "normal";
+      let voiceEnabled = localStorage.getItem("kdx_voice_enabled") !== "off";
+
+      function updateVoiceButtons() {
+        voiceNormalBtn.classList.toggle("active", voiceMode === "normal");
+        voiceCalmBtn.classList.toggle("active", voiceMode === "calm");
+        voiceToggleBtn.classList.toggle("active", voiceEnabled);
+        voiceToggleBtn.textContent = voiceEnabled ? "Voice On" : "Voice Off";
+      }
+
+      function setVoiceMode(mode) {
+        voiceMode = mode === "calm" ? "calm" : "normal";
+        localStorage.setItem("kdx_voice_mode", voiceMode);
+        updateVoiceButtons();
+      }
+
+      function setVoiceEnabled(enabled) {
+        voiceEnabled = !!enabled;
+        localStorage.setItem("kdx_voice_enabled", voiceEnabled ? "on" : "off");
+        if (!voiceEnabled && "speechSynthesis" in window) {
+          window.speechSynthesis.cancel();
+        }
+        updateVoiceButtons();
+      }
+
+      function pickBestVoice() {
+        if (!("speechSynthesis" in window)) return null;
+        const voices = window.speechSynthesis.getVoices() || [];
+        if (!voices.length) return null;
+
+        const preferredNames = [
+          "google us english",
+          "samantha",
+          "zira",
+          "aria",
+          "serena",
+          "female"
+        ];
+
+        let best = null;
+        let bestScore = -1;
+        voices.forEach(function (v) {
+          let score = 0;
+          const name = String(v.name || "").toLowerCase();
+          const lang = String(v.lang || "").toLowerCase();
+          if (lang.startsWith("en-us")) score += 6;
+          else if (lang.startsWith("en")) score += 4;
+          if (v.localService) score += 2;
+          if (preferredNames.some(function (n) { return name.indexOf(n) !== -1; })) score += 3;
+          if (score > bestScore) {
+            bestScore = score;
+            best = v;
+          }
+        });
+        return best;
+      }
+
+      function warmupVoices() {
+        if (!("speechSynthesis" in window)) return;
+        window.speechSynthesis.getVoices();
+        cachedVoice = pickBestVoice();
+      }
+
+      function speakPreview(text) {
+        try {
+          if (!("speechSynthesis" in window)) return;
+          if (!voiceEnabled) return;
+          const now = Date.now();
+          if (text === lastSpokenText && now - lastSpokenAt < 1300) return;
+
+          const utter = new SpeechSynthesisUtterance(text);
+          if (!cachedVoice) cachedVoice = pickBestVoice();
+          if (cachedVoice) {
+            utter.voice = cachedVoice;
+            utter.lang = cachedVoice.lang || "en-US";
+          } else {
+            utter.lang = "en-US";
+          }
+          if (voiceMode === "calm") {
+            utter.rate = 0.78;
+            utter.pitch = 0.96;
+          } else {
+            utter.rate = 0.88;
+            utter.pitch = 1.04;
+          }
+          utter.volume = 1;
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(utter);
+          lastSpokenText = text;
+          lastSpokenAt = now;
+        } catch (_) {
+          // Ignore speech errors and keep visual hint.
+        }
+      }
+
+      function spellingFor(name) {
+        return name.toUpperCase().split("").join("-");
+      }
+
+      function previewAnimalName(name) {
+        const text = name + ". Spelling: " + spellingFor(name);
+        setMessage(text, "");
+        speakPreview(text);
+      }
+
+      function renderRound() {
+        const round = rounds[currentRoundIndex];
+        const names = shuffle(round.animals);
+        const images = shuffle(round.animals);
+        selectedName = null;
+
+        letterCard.textContent = round.letter;
+        groupText.textContent = round.letter;
+        roundText.textContent = String(currentRoundIndex + 1) + " / " + String(rounds.length);
+        scoreText.textContent = String(totalMatches);
+        nextBtn.disabled = true;
+
+        nameChoices.innerHTML = "";
+        imageChoices.innerHTML = "";
+
+        names.forEach(function (animal) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "name-btn";
+          btn.textContent = animal.name;
+          btn.setAttribute("data-name", animal.name);
+          btn.addEventListener("click", function () {
+            if (btn.classList.contains("matched")) return;
+            Array.from(nameChoices.querySelectorAll(".name-btn")).forEach(function (n) {
+              n.classList.remove("selected");
+            });
+            btn.classList.add("selected");
+            selectedName = animal.name;
+            setMessage("Now tap the matching picture for " + animal.name + ".", "");
+          });
+          nameChoices.appendChild(btn);
+        });
+
+        images.forEach(function (animal) {
+          const card = document.createElement("button");
+          card.type = "button";
+          card.className = "image-card";
+          card.setAttribute("data-name", animal.name);
+          card.setAttribute("title", animal.name + " (" + spellingFor(animal.name) + ")");
+          card.setAttribute("aria-label", animal.name + ", spelling " + spellingFor(animal.name));
+          card.innerHTML = '<span class="emoji" aria-hidden="true">' + animal.image + '</span><span class="hint">Tap to match</span>';
+          card.addEventListener("mouseenter", function () {
+            previewAnimalName(animal.name);
+          });
+          card.addEventListener("focus", function () {
+            previewAnimalName(animal.name);
+          });
+          card.addEventListener("touchstart", function () {
+            previewAnimalName(animal.name);
+          }, { passive: true });
+          card.addEventListener("click", function () {
+            if (card.classList.contains("matched")) return;
+            if (!selectedName) {
+              setMessage("Pick an animal name first.", "no");
+              return;
+            }
+
+            if (selectedName === animal.name) {
+              card.classList.add("matched");
+              const selectedButton = nameChoices.querySelector('.name-btn.selected');
+              if (selectedButton) {
+                selectedButton.classList.remove("selected");
+                selectedButton.classList.add("matched");
+              }
+              selectedName = null;
+              totalMatches += 1;
+              scoreText.textContent = String(totalMatches);
+              setMessage("Great match!", "ok");
+              checkRoundComplete();
+            } else {
+              setMessage("Try again. That picture does not match.", "no");
+            }
+          });
+          imageChoices.appendChild(card);
+        });
+
+        setMessage("Pick a name first.", "");
+      }
+
+      function checkRoundComplete() {
+        const matchedCount = nameChoices.querySelectorAll(".name-btn.matched").length;
+        const totalForRound = rounds[currentRoundIndex].animals.length;
+        if (matchedCount === totalForRound) {
+          if (currentRoundIndex < rounds.length - 1) {
+            setMessage("Awesome! You finished letter " + rounds[currentRoundIndex].letter + ".", "ok");
+            nextBtn.disabled = false;
+          } else {
+            setMessage("You completed all letters. Amazing work!", "ok");
+            nextBtn.disabled = true;
+          }
+        }
+      }
+
+      function restartGame() {
+        rounds = buildRounds();
+        currentRoundIndex = 0;
+        totalMatches = 0;
+        renderRound();
+      }
+
+      warmupVoices();
+      updateVoiceButtons();
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.onvoiceschanged = function () {
+          cachedVoice = pickBestVoice();
+        };
+      }
+
+      voiceNormalBtn.addEventListener("click", function () {
+        setVoiceMode("normal");
+        setMessage("Voice style set to Normal.", "ok");
+      });
+
+      voiceCalmBtn.addEventListener("click", function () {
+        setVoiceMode("calm");
+        setMessage("Voice style set to Calm.", "ok");
+      });
+
+      voiceToggleBtn.addEventListener("click", function () {
+        setVoiceEnabled(!voiceEnabled);
+        setMessage(voiceEnabled ? "Voice turned on." : "Voice turned off.", "ok");
+      });
+
+      nextBtn.addEventListener("click", function () {
+        if (currentRoundIndex >= rounds.length - 1) return;
+        currentRoundIndex += 1;
+        renderRound();
+      });
+
+      restartBtn.addEventListener("click", restartGame);
+      restartGame();
+    })();
+  </script>
+
+  <script type="module">
+    import { injectNavbar } from '/scripts/navbar-footer.js';
+    injectNavbar();
+    window.addEventListener('DOMContentLoaded', () => {
+      var parentBtn = document.getElementById('parent-btn');
+      if (parentBtn) {
+        parentBtn.addEventListener('click', function(){
+          if (typeof showParentalGate === 'function') showParentalGate();
+        });
+      }
+      var ageSubmit = document.getElementById('ageSubmit');
+      if (ageSubmit) {
+        ageSubmit.addEventListener('click', function(){
+          const year = parseInt(document.getElementById('birthYear').value || '0', 10);
+          if (isNaN(year)) return;
+          if (typeof handleParentalConfirm === 'function') handleParentalConfirm(year);
+        });
+      }
+      var ageCancel = document.getElementById('ageCancel');
+      if (ageCancel) {
+        ageCancel.addEventListener('click', function(){
+          if (typeof closeParentalModal === 'function') closeParentalModal();
+        });
+      }
+    });
+  </script>
+  <script src="/game-shell.js"></script>
+</body>
+</html>

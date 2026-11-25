@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>More or Less</title>
+  <link rel="icon" href="/kiddoxy.png" type="image/png">
+  <link rel="stylesheet" href="/styles/kid-kit.css">
+  <style>
+    .sides { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: stretch; }
+    .side { border: none; border-radius: 20px; background: #f0f9ff; min-height: 200px; padding: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 0 #bae6fd; }
+    .side:active { transform: translateY(3px); box-shadow: 0 3px 0 #bae6fd; }
+    .side.right-answer { background: #dcfce7; box-shadow: 0 6px 0 #86efac; }
+    .items { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; font-size: clamp(22px, 6vw, 34px); max-width: 220px; }
+    .num { font-size: clamp(40px, 12vw, 72px); font-weight: 900; color: #0369a1; }
+    .mid { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+    .sym { width: 64px; height: 64px; font-size: 32px; font-weight: 900; border-radius: 16px; border: none; background: #fef3c7; cursor: pointer; box-shadow: 0 4px 0 #fcd34d; }
+    .sym:active { transform: translateY(2px); }
+    .question { font-size: clamp(20px, 5vw, 30px); font-weight: 900; text-align: center; margin: 6px 0 14px; }
+    .question b { color: #ea580c; }
+    .feedback { text-align: center; font-size: 22px; font-weight: 800; min-height: 32px; margin-top: 10px; }
+    .progress { height: 12px; background: #e5e7eb; border-radius: 999px; overflow: hidden; margin-top: 12px; }
+    .progress > div { height: 100%; background: linear-gradient(90deg, #22c55e, #84cc16); width: 0; transition: width .3s; }
+    @media (max-width: 480px) { .side { min-height: 150px; } }
+  </style>
+  <script defer src="/scripts/game-brand.js"></script>
+  <script defer src="/game-shell.js"></script>
+  <script src="/scripts/kid-kit.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="game-header">
+    <h1>🐊 More or Less</h1>
+    <div class="hud">
+      <span class="pill">⭐ <span id="score">0</span>/10</span>
+      <button class="btn secondary icon-btn" id="muteBtn" aria-label="Sound">🔊</button>
+    </div>
+  </header>
+  <main class="game-main">
+    <div class="panel">
+      <div style="display:flex;justify-content:center;margin-bottom:10px">
+        <div class="seg" id="levelSeg" role="group" aria-label="Level">
+          <button data-level="1" class="active">Count 🍎</button><button data-level="2">Numbers</button><button data-level="3">&lt; = &gt;</button>
+        </div>
+      </div>
+      <div class="question" id="question"></div>
+      <div class="sides">
+        <button class="side" id="left"></button>
+        <div class="mid" id="mid" hidden>
+          <button class="sym" data-sym="<">&lt;</button>
+          <button class="sym" data-sym="=">=</button>
+          <button class="sym" data-sym=">">&gt;</button>
+        </div>
+        <button class="side" id="right"></button>
+      </div>
+      <div class="feedback" id="feedback" aria-live="polite"></div>
+      <div class="progress"><div id="bar"></div></div>
+    </div>
+  </main>
+  <div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+</div>
+<script>
+(function () {
+  const ITEMS = ['🍎', '🐟', '⭐', '🎈', '🐞', '🍪', '🌸', '🚗'];
+  const L = document.getElementById('left'), R = document.getElementById('right'), mid = document.getElementById('mid');
+  const q = document.getElementById('question'), fb = document.getElementById('feedback'), bar = document.getElementById('bar'), scoreEl = document.getElementById('score');
+  let level = 1, round = 0, score = 0, a = 0, b = 0, askMore = true, missed = false, busy = false;
+
+  function render(el, n, emoji) {
+    el.classList.remove('right-answer');
+    if (level === 1) el.innerHTML = `<div class="items">${emoji.repeat(n)}</div><div class="muted" style="font-weight:800">${n}</div>`;
+    else el.innerHTML = `<div class="num">${n}</div>`;
+  }
+
+  function next() {
+    busy = false; missed = false; fb.textContent = '';
+    if (round >= 10) return finish();
+    round++; bar.style.width = ((round - 1) * 10) + '%';
+    const max = level === 1 ? 10 : level === 2 ? 50 : 20;
+    a = Kit.rand(1, max);
+    do { b = Kit.rand(1, max); } while (level !== 3 && b === a);
+    if (level === 3 && Math.random() < 0.2) b = a;
+    askMore = Math.random() < 0.5;
+    const emoji = Kit.pick(ITEMS);
+    render(L, a, emoji); render(R, b, emoji);
+    mid.hidden = level !== 3;
+    L.disabled = R.disabled = level === 3;
+    if (level === 3) { q.innerHTML = 'Pick the right sign: <b>&lt;</b>, <b>=</b> or <b>&gt;</b>'; Kit.speak('Which sign goes in the middle?'); }
+    else { q.innerHTML = `Tap the side with <b>${askMore ? 'MORE' : 'LESS'}</b>`; Kit.speak(askMore ? 'Which has more?' : 'Which has less?'); }
+  }
+
+  function good(el) {
+    busy = true;
+    if (!missed) { score++; scoreEl.textContent = score; }
+    el && el.classList.add('right-answer', 'pop');
+    fb.textContent = Kit.pick(['Great job! 🎉', 'Yes! ⭐', 'Super! 🐊', 'You got it! 👍']);
+    Kit.sfx.good();
+    setTimeout(next, 1100);
+  }
+  function bad(el, hint) {
+    missed = true; el.classList.add('shake'); setTimeout(() => el.classList.remove('shake'), 300);
+    fb.textContent = hint; Kit.sfx.bad();
+  }
+
+  function pickSide(which) {
+    if (busy || level === 3) return;
+    const val = which === 'L' ? a : b, other = which === 'L' ? b : a;
+    const correct = askMore ? val > other : val < other;
+    const el = which === 'L' ? L : R;
+    if (correct) good(el); else bad(el, `${val} is ${val > other ? 'more' : 'less'} than ${other}. Try again!`);
+  }
+  L.onclick = () => pickSide('L');
+  R.onclick = () => pickSide('R');
+  mid.addEventListener('click', e => {
+    const btn = e.target.closest('.sym'); if (!btn || busy) return;
+    const s = btn.dataset.sym, right = a < b ? '<' : a > b ? '>' : '=';
+    if (s === right) { q.innerHTML = `<b>${a} ${right} ${b}</b>`; good(btn); Kit.speak(`${a} is ${right === '<' ? 'less than' : right === '>' ? 'greater than' : 'equal to'} ${b}`); }
+    else bad(btn, 'Hint: the crocodile mouth eats the bigger number! 🐊');
+  });
+
+  function finish() {
+    bar.style.width = '100%';
+    Kit.sfx.win(); Kit.celebrate();
+    const r = Kit.best('more-or-less-' + level, score);
+    Kit.showResult({ emoji: score >= 8 ? '🏆' : '⭐', title: 'Well done!', text: `You got ${score} of 10 right first try.` + (r.isNew ? ' New best!' : ''), onAgain: restart });
+  }
+  function restart() { round = 0; score = 0; scoreEl.textContent = 0; next(); }
+  document.getElementById('levelSeg').addEventListener('click', e => {
+    const btn = e.target.closest('button'); if (!btn) return;
+    document.querySelectorAll('#levelSeg button').forEach(x => x.classList.toggle('active', x === btn));
+    level = Number(btn.dataset.level); restart();
+  });
+  restart();
+})();
+</script>
+</body>
+</html>

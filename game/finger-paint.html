@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Finger Paint</title>
+  <link rel="icon" href="/kiddoxy.png" type="image/png">
+  <link rel="stylesheet" href="/styles/kid-kit.css">
+  <style>
+    main.game-main { padding-top: 4px; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; width: 100%; max-width: 980px; }
+    .group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; background: #fff; padding: 6px; border-radius: 16px; box-shadow: var(--k-shadow); }
+    .group[hidden] { display: none; }
+    @media (max-width: 520px) { .swatch { width: 34px !important; height: 34px !important; } .tool { width: 40px !important; height: 40px !important; font-size: 19px !important; } .canvas-wrap { height: 58vh !important; } }
+    .swatch { width: 40px; height: 40px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 2px #e5e7eb; cursor: pointer; padding: 0; }
+    .swatch.active { box-shadow: 0 0 0 3px #111; transform: scale(1.1); }
+    .rainbow { background: conic-gradient(red, orange, yellow, lime, cyan, blue, magenta, red); }
+    .tool { width: 46px; height: 46px; border-radius: 12px; border: none; background: #f3f4f6; font-size: 22px; cursor: pointer; }
+    .tool.active { background: #c7d2fe; outline: 2px solid #6366f1; }
+    .size-dot { display: inline-block; background: #111; border-radius: 50%; }
+    .canvas-wrap { width: 100%; max-width: 980px; height: min(64vh, 620px); background: #fff; border-radius: 18px; box-shadow: var(--k-shadow); overflow: hidden; position: relative; touch-action: none; }
+    canvas { display: block; width: 100%; height: 100%; max-width: none !important; touch-action: none; cursor: crosshair; }
+  </style>
+  <script defer src="/scripts/game-brand.js"></script>
+  <script defer src="/game-shell.js"></script>
+  <script src="/scripts/kid-kit.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="game-header">
+    <h1>🎨 Finger Paint</h1>
+    <div class="hud">
+      <button class="btn secondary icon-btn" id="undoBtn" title="Undo" aria-label="Undo">↩️</button>
+      <button class="btn secondary" id="clearBtn">🧽 Clear</button>
+      <button class="btn" id="saveBtn">💾 Save</button>
+      <button class="btn secondary icon-btn" id="muteBtn" aria-label="Sound">🔊</button>
+    </div>
+  </header>
+  <main class="game-main">
+    <div class="toolbar">
+      <div class="group" id="colors" aria-label="Colors"></div>
+      <div class="group" id="tools" aria-label="Brushes">
+        <button class="tool active" data-tool="brush" title="Brush">🖌️</button>
+        <button class="tool" data-tool="spray" title="Spray">💨</button>
+        <button class="tool" data-tool="stamp" title="Stamps">⭐</button>
+        <button class="tool" data-tool="eraser" title="Eraser">🩹</button>
+      </div>
+      <div class="group" id="sizes" aria-label="Brush size"></div>
+      <div class="group" id="stamps" aria-label="Stamp picker" hidden></div>
+    </div>
+    <div class="canvas-wrap"><canvas id="c" aria-label="Drawing canvas"></canvas></div>
+  </main>
+  <div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+</div>
+<script>
+(function () {
+  const COLORS = ['#ef4444', '#f97316', '#facc15', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#a16207', '#111827', 'rainbow'];
+  const SIZES = [6, 14, 26, 44];
+  const STAMPS = ['⭐', '❤️', '🌸', '🐶', '🐱', '🦋', '🌈', '☀️', '🚗', '🍎'];
+  const c = document.getElementById('c'), ctx = c.getContext('2d');
+  let color = COLORS[5], size = SIZES[1], tool = 'brush', stamp = STAMPS[0];
+  let drawing = false, last = null, hue = 0;
+  const history = [];
+
+  // Build palette / size / stamp pickers
+  const colorsEl = document.getElementById('colors');
+  COLORS.forEach((col, i) => {
+    const b = document.createElement('button');
+    b.className = 'swatch' + (col === color ? ' active' : '') + (col === 'rainbow' ? ' rainbow' : '');
+    if (col !== 'rainbow') b.style.background = col;
+    b.setAttribute('aria-label', col === 'rainbow' ? 'Rainbow' : 'Color ' + (i + 1));
+    b.onclick = () => { color = col; activate(colorsEl, b); if (tool === 'eraser') setTool('brush'); Kit.sfx.tap(); };
+    colorsEl.appendChild(b);
+  });
+  const sizesEl = document.getElementById('sizes');
+  SIZES.forEach(s => {
+    const b = document.createElement('button');
+    b.className = 'tool' + (s === size ? ' active' : '');
+    b.innerHTML = `<span class="size-dot" style="width:${Math.min(30, s * 0.7 + 4)}px;height:${Math.min(30, s * 0.7 + 4)}px"></span>`;
+    b.setAttribute('aria-label', 'Size ' + s);
+    b.onclick = () => { size = s; activate(sizesEl, b); Kit.sfx.tap(); };
+    sizesEl.appendChild(b);
+  });
+  const stampsEl = document.getElementById('stamps');
+  STAMPS.forEach(s => {
+    const b = document.createElement('button');
+    b.className = 'tool' + (s === stamp ? ' active' : '');
+    b.textContent = s;
+    b.onclick = () => { stamp = s; activate(stampsEl, b); Kit.sfx.tap(); };
+    stampsEl.appendChild(b);
+  });
+  const toolsEl = document.getElementById('tools');
+  toolsEl.addEventListener('click', e => { const b = e.target.closest('button'); if (b) { setTool(b.dataset.tool); Kit.sfx.tap(); } });
+  function setTool(t) {
+    tool = t;
+    toolsEl.querySelectorAll('button').forEach(x => x.classList.toggle('active', x.dataset.tool === t));
+    stampsEl.hidden = t !== 'stamp';
+  }
+  function activate(group, btn) { group.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === btn)); }
+
+  // Canvas sizing keeps the drawing when the window changes size
+  function resize() {
+    const r = c.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const snap = c.width ? c.toDataURL() : null;
+    c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    fillWhite();
+    if (snap) { const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0, r.width, r.height); img.src = snap; }
+  }
+  function fillWhite() { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.restore(); }
+  const pos = e => { const r = c.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  function currentColor() { if (color !== 'rainbow') return color; hue = (hue + 4) % 360; return `hsl(${hue},90%,55%)`; }
+
+  function saveHistory() { try { history.push(ctx.getImageData(0, 0, c.width, c.height)); if (history.length > 20) history.shift(); } catch (_) {} }
+
+  function dot(p) {
+    if (tool === 'stamp') {
+      ctx.font = `${size * 2 + 20}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(stamp, p.x, p.y); Kit.beep(500 + Math.random() * 400, 0.08, 'triangle', 0.12); return;
+    }
+    if (tool === 'spray') { spray(p); return; }
+    ctx.fillStyle = tool === 'eraser' ? '#fff' : currentColor();
+    ctx.beginPath(); ctx.arc(p.x, p.y, size / 2, 0, Math.PI * 2); ctx.fill();
+  }
+  function spray(p) {
+    ctx.fillStyle = currentColor();
+    for (let i = 0; i < size * 1.5; i++) {
+      const a = Math.random() * Math.PI * 2, r = Math.random() * size;
+      ctx.fillRect(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, 1.6, 1.6);
+    }
+  }
+  function line(a, b) {
+    if (tool === 'spray') { spray(b); return; }
+    ctx.strokeStyle = tool === 'eraser' ? '#fff' : currentColor();
+    ctx.lineWidth = size; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  }
+
+  c.addEventListener('pointerdown', e => {
+    e.preventDefault(); try { c.setPointerCapture(e.pointerId); } catch (_) {}
+    saveHistory(); drawing = tool !== 'stamp'; last = pos(e); dot(last);
+  });
+  c.addEventListener('pointermove', e => {
+    if (!drawing) return;
+    const co = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+    const events = co.length ? co : [e];
+    for (const ev of events) { const p = pos(ev); line(last, p); last = p; }
+  });
+  const stop = () => { drawing = false; last = null; };
+  c.addEventListener('pointerup', stop); c.addEventListener('pointercancel', stop);
+
+  document.getElementById('clearBtn').onclick = () => { saveHistory(); fillWhite(); Kit.beep(300, 0.2, 'triangle', 0.15); };
+  document.getElementById('undoBtn').onclick = () => { const h = history.pop(); if (h) ctx.putImageData(h, 0, 0); };
+  document.getElementById('saveBtn').onclick = () => {
+    const a = document.createElement('a');
+    a.download = 'my-kiddoxy-painting.png'; a.href = c.toDataURL('image/png'); a.click();
+    Kit.sfx.win(); Kit.celebrate();
+  };
+  window.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); document.getElementById('undoBtn').click(); } });
+  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(resize, 150); });
+  resize();
+})();
+</script>
+</body>
+</html>

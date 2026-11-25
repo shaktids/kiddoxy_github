@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Drum Pad</title>
+  <link rel="icon" href="/kiddoxy.png" type="image/png">
+  <link rel="stylesheet" href="/styles/kid-kit.css">
+  <style>
+    .pads { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; width: min(94vw, 620px); margin: 0 auto; }
+    @media (max-width: 480px) { .pads { grid-template-columns: repeat(2, 1fr); } }
+    .pad { aspect-ratio: 1; border: none; border-radius: 22px; color: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-weight: 900; box-shadow: inset 0 -8px 0 rgba(0,0,0,.2); touch-action: manipulation; user-select: none; }
+    .pad .ic { font-size: clamp(34px, 10vw, 52px); }
+    .pad .k { font-size: 12px; opacity: .8; }
+    .pad.hit { transform: scale(.94); filter: brightness(1.25); }
+    .seq { display: grid; grid-template-columns: 90px repeat(8, 1fr); gap: 4px; width: min(94vw, 620px); margin: 18px auto 0; align-items: center; }
+    .seq .lbl { font-size: 22px; text-align: center; }
+    .step { aspect-ratio: 1; border: none; border-radius: 8px; background: #e5e7eb; cursor: pointer; padding: 0; }
+    .step.on { background: var(--c); }
+    .step.now { outline: 3px solid #111; outline-offset: -3px; }
+    .step:nth-child(9n+6) { margin-left: 4px; }
+    .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; align-items: center; }
+  </style>
+  <script defer src="/scripts/game-brand.js"></script>
+  <script defer src="/game-shell.js"></script>
+  <script src="/scripts/kid-kit.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="game-header">
+    <h1>🥁 Drum Pad</h1>
+    <div class="hud"><button class="btn secondary icon-btn" id="muteBtn" aria-label="Sound">🔊</button></div>
+  </header>
+  <main class="game-main">
+    <div class="panel">
+      <p class="prompt">Tap the pads to make music!</p>
+      <div class="pads" id="pads"></div>
+      <h2 style="text-align:center;margin:22px 0 0;font-size:20px">🎼 Beat maker</h2>
+      <p class="muted" style="text-align:center;margin:4px 0">Tap squares to build a beat, then press Play.</p>
+      <div class="seq" id="seq"></div>
+      <div class="row">
+        <button class="btn" id="playBtn">▶ Play</button>
+        <button class="btn secondary" id="clearBtn">🧽 Clear</button>
+        <button class="btn secondary" id="demoBtn">✨ Example beat</button>
+        <label style="font-weight:800">Speed <input type="range" id="tempo" min="70" max="160" value="110"></label>
+      </div>
+    </div>
+  </main>
+  <div class="ad-banner">AD_BANNER_PLACEHOLDER</div>
+</div>
+<script>
+(function () {
+  let ac = null;
+  const A = () => { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); return ac; };
+  const muted = () => { try { return localStorage.getItem('kiddoxy-muted') === '1'; } catch (_) { return false; } };
+  function noise(dur) { const a = A(), b = a.createBuffer(1, a.sampleRate * dur, a.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; const s = a.createBufferSource(); s.buffer = b; return s; }
+  function env(g, t, peak, dur) { g.gain.setValueAtTime(peak, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); }
+  // All sounds are synthesised with Web Audio — no audio files needed
+  const SOUNDS = {
+    kick(t) { const a = A(), o = a.createOscillator(), g = a.createGain(); o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.15); env(g, t, 0.9, 0.3); o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.3); },
+    snare(t) { const a = A(), n = noise(0.2), f = a.createBiquadFilter(), g = a.createGain(); f.type = 'highpass'; f.frequency.value = 1200; env(g, t, 0.5, 0.18); n.connect(f).connect(g).connect(a.destination); n.start(t); },
+    hat(t) { const a = A(), n = noise(0.06), f = a.createBiquadFilter(), g = a.createGain(); f.type = 'highpass'; f.frequency.value = 7000; env(g, t, 0.3, 0.05); n.connect(f).connect(g).connect(a.destination); n.start(t); },
+    clap(t) { [0, 0.012, 0.024].forEach(d => SOUNDS.snare(t + d)); },
+    tom(t) { const a = A(), o = a.createOscillator(), g = a.createGain(); o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(110, t + 0.25); env(g, t, 0.6, 0.3); o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.3); },
+    bell(t) { const a = A(); [880, 1320].forEach(fq => { const o = a.createOscillator(), g = a.createGain(); o.frequency.value = fq; env(g, t, 0.18, 0.8); o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.8); }); },
+    quack(t) { const a = A(), o = a.createOscillator(), g = a.createGain(); o.type = 'sawtooth'; o.frequency.setValueAtTime(600, t); o.frequency.exponentialRampToValueAtTime(300, t + 0.15); env(g, t, 0.2, 0.18); o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.2); },
+    boing(t) { const a = A(), o = a.createOscillator(), g = a.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(200, t); o.frequency.exponentialRampToValueAtTime(800, t + 0.3); env(g, t, 0.35, 0.35); o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.35); },
+  };
+  const PADS = [
+    ['kick', '🥁', 'Boom', '#ef4444', 'Q'], ['snare', '🪘', 'Snare', '#f97316', 'W'], ['hat', '🎩', 'Tss', '#eab308', 'E'], ['clap', '👏', 'Clap', '#22c55e', 'R'],
+    ['tom', '🛢️', 'Tom', '#06b6d4', 'A'], ['bell', '🔔', 'Ding', '#3b82f6', 'S'], ['quack', '🦆', 'Quack', '#8b5cf6', 'D'], ['boing', '🐸', 'Boing', '#ec4899', 'F'],
+  ];
+  const padsEl = document.getElementById('pads'), padEls = {};
+  function hit(name) {
+    if (!muted()) SOUNDS[name](A().currentTime);
+    const el = padEls[name]; el.classList.add('hit'); setTimeout(() => el.classList.remove('hit'), 110);
+  }
+  PADS.forEach(([name, ic, label, col, key]) => {
+    const b = document.createElement('button'); b.className = 'pad'; b.style.background = col;
+    b.innerHTML = `<span class="ic">${ic}</span><span>${label}</span><span class="k">${key}</span>`;
+    b.addEventListener('pointerdown', e => { e.preventDefault(); hit(name); });
+    b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hit(name); } });
+    padsEl.appendChild(b); padEls[name] = b;
+  });
+  window.addEventListener('keydown', e => { if (e.repeat) return; const p = PADS.find(p => p[4] === e.key.toUpperCase()); if (p) hit(p[0]); });
+
+  // 4-row step sequencer
+  const ROWS = [PADS[0], PADS[1], PADS[2], PADS[6]];
+  const STEPS = 8, seqEl = document.getElementById('seq');
+  let pattern = ROWS.map(() => Array(STEPS).fill(false)), stepEls = [], playing = false, step = 0, nextT = 0, timer = null;
+  ROWS.forEach(([name, ic, , col], r) => {
+    const l = document.createElement('div'); l.className = 'lbl'; l.textContent = ic; seqEl.appendChild(l);
+    stepEls[r] = [];
+    for (let s = 0; s < STEPS; s++) {
+      const b = document.createElement('button'); b.className = 'step'; b.style.setProperty('--c', col);
+      b.setAttribute('aria-label', `${name} step ${s + 1}`);
+      b.onclick = () => { pattern[r][s] = !pattern[r][s]; b.classList.toggle('on', pattern[r][s]); if (pattern[r][s]) hit(name); };
+      seqEl.appendChild(b); stepEls[r][s] = b;
+    }
+  });
+  function paint() { pattern.forEach((row, r) => row.forEach((on, s) => stepEls[r][s].classList.toggle('on', on))); }
+  function tick() {
+    const a = A(), spb = 60 / Number(document.getElementById('tempo').value) / 2;
+    while (nextT < a.currentTime + 0.1) {
+      const s = step;
+      ROWS.forEach(([name], r) => { if (pattern[r][s] && !muted()) SOUNDS[name](nextT); });
+      setTimeout(() => stepEls.forEach((row, r) => row.forEach((b, i) => b.classList.toggle('now', i === s))), Math.max(0, (nextT - a.currentTime) * 1000));
+      nextT += spb; step = (step + 1) % STEPS;
+    }
+  }
+  const playBtn = document.getElementById('playBtn');
+  playBtn.onclick = () => {
+    playing = !playing; playBtn.textContent = playing ? '⏸ Stop' : '▶ Play';
+    if (playing) { step = 0; nextT = A().currentTime + 0.05; timer = setInterval(tick, 25); }
+    else { clearInterval(timer); stepEls.flat().forEach(b => b.classList.remove('now')); }
+  };
+  document.getElementById('clearBtn').onclick = () => { pattern = ROWS.map(() => Array(STEPS).fill(false)); paint(); };
+  document.getElementById('demoBtn').onclick = () => {
+    pattern = [[1,0,0,0,1,0,0,0],[0,0,1,0,0,0,1,0],[1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,1]].map(r => r.map(Boolean));
+    paint(); if (!playing) playBtn.click();
+  };
+})();
+</script>
+</body>
+</html>
